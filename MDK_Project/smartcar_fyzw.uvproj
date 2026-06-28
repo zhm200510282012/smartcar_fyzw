@@ -267,7 +267,7 @@
             <Optim>7</Optim>
             <wLevel>2</wLevel>
             <SizSpd>1</SizSpd>
-            <AcaOpt>1</AcaOpt>
+            <AcaOpt>0</AcaOpt>
             <VariousControls>
               <MiscControls></MiscControls>
               <Define>AI8051U_32Bit</Define>
@@ -508,37 +508,77 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>Official_LQ_Reference</GroupName>
+          <GroupName>Official_Driver_Libs</GroupName>
           <Files>
             <File>
-              <FileName>LQ_MotorServo.c</FileName>
+              <FileName>AI8051U_32_MDU32.LIB</FileName>
+              <FileType>4</FileType>
+              <FilePath>..\Drivers\Official_LQ\Driver\AI8051U_32_MDU32.LIB</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Official_Driver_Core</GroupName>
+          <Files>
+            <File>
+              <FileName>AI8051U_ADC.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Drivers\Official_LQ\LQ_LIB\Src\LQ_MotorServo.c</FilePath>
+              <FilePath>..\Drivers\Official_LQ\Driver\Src\AI8051U_ADC.c</FilePath>
             </File>
             <File>
-              <FileName>LQ_Encoder.c</FileName>
+              <FileName>AI8051U_Clock.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Drivers\Official_LQ\LQ_LIB\Src\LQ_Encoder.c</FilePath>
+              <FilePath>..\Drivers\Official_LQ\Driver\Src\AI8051U_Clock.c</FilePath>
             </File>
             <File>
-              <FileName>LQ_ADC.c</FileName>
+              <FileName>AI8051U_Delay.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Drivers\Official_LQ\LQ_LIB\Src\LQ_ADC.c</FilePath>
+              <FilePath>..\Drivers\Official_LQ\Driver\Src\AI8051U_Delay.c</FilePath>
             </File>
             <File>
-              <FileName>LQ_LSM6DSR_Hard.c</FileName>
+              <FileName>AI8051U_DMA.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Drivers\Official_LQ\LQ_LIB\Src\LQ_LSM6DSR_Hard.c</FilePath>
+              <FilePath>..\Drivers\Official_LQ\Driver\Src\AI8051U_DMA.c</FilePath>
             </File>
             <File>
-              <FileName>LQ_UART.c</FileName>
+              <FileName>AI8051U_GPIO.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Drivers\Official_LQ\LQ_LIB\Src\LQ_UART.c</FilePath>
+              <FilePath>..\Drivers\Official_LQ\Driver\Src\AI8051U_GPIO.c</FilePath>
             </File>
             <File>
-              <FileName>LQ_TIMER.c</FileName>
+              <FileName>AI8051U_I2C.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Drivers\Official_LQ\LQ_LIB\Src\LQ_TIMER.c</FilePath>
+              <FilePath>..\Drivers\Official_LQ\Driver\Src\AI8051U_I2C.c</FilePath>
+            </File>
+            <File>
+              <FileName>AI8051U_NVIC.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Drivers\Official_LQ\Driver\Src\AI8051U_NVIC.c</FilePath>
+            </File>
+            <File>
+              <FileName>AI8051U_PWM.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Drivers\Official_LQ\Driver\Src\AI8051U_PWM.c</FilePath>
+            </File>
+            <File>
+              <FileName>AI8051U_SPI.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Drivers\Official_LQ\Driver\Src\AI8051U_SPI.c</FilePath>
+            </File>
+            <File>
+              <FileName>AI8051U_Timer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Drivers\Official_LQ\Driver\Src\AI8051U_Timer.c</FilePath>
+            </File>
+            <File>
+              <FileName>AI8051U_UART.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Drivers\Official_LQ\Driver\Src\AI8051U_UART.c</FilePath>
+            </File>
+            <File>
+              <FileName>AI8051U_WDT.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Drivers\Official_LQ\Driver\Src\AI8051U_WDT.c</FilePath>
             </File>
           </Files>
         </Group>

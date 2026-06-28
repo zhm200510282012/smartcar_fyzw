@@ -1,7 +1,10 @@
 #include "bsp_ui.h"
 
+static volatile app_state_t g_last_shown_state;
+
 void bsp_ui_init(void)
 {
+    g_last_shown_state = APP_STATE_BOOT;
 }
 
 u8 bsp_ui_manual_arm_requested(void)
@@ -16,5 +19,5 @@ u8 bsp_ui_suction_authorized(void)
 
 void bsp_ui_show_state(app_state_t state)
 {
-    (void)state;
+    g_last_shown_state = state;
 }

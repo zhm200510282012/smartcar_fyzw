@@ -4,6 +4,7 @@
 static suction_command_t g_last_command;
 static u16 g_last_native_output;
 
+#if SUCTION_HW_VERIFIED != 0
 static u16 clamp_native(u16 value)
 {
     if (value > SUCTION_BOOST_NATIVE) {
@@ -11,6 +12,7 @@ static u16 clamp_native(u16 value)
     }
     return value;
 }
+#endif
 
 static void bsp_suction_write_native(u16 native_value)
 {
