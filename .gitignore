@@ -1,5 +1,7 @@
 # Build outputs
-build/
+build/*
+!build/*.log
+!build/*.map
 MDK_Project/OBJ_Out/
 MDK_Project/Listings/
 MDK_Project/Objects/
@@ -16,9 +18,15 @@ MDK_Project/Objects/
 *.crf
 *.lnp
 *.map
+!build/*.map
 *.htm
 *.hex
 *.bin
+sim/host/host_sil
+sim/host/host_sil.exe
+sim/host/*.pdb
+sim/tests/__pycache__/
+__pycache__/
 
 # Local editor and OS noise
 .vscode/

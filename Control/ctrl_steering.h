@@ -4,6 +4,6 @@
 #include "../App/app_types.h"
 #include "../App/app_config.h"
 
-s16 ctrl_steering_command(s16 line_error, u16 signal_quality);
+s16 ctrl_steering_offset_us(s16 line_error, u16 signal_quality);
 
 #endif

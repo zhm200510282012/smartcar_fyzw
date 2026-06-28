@@ -10,8 +10,9 @@ typedef struct {
     fault_code_t faults;
     s16 line_error;
     u16 signal_quality;
-    s16 drive_cmd;
-    s16 steering_cmd;
+    s16 drive_command_native;
+    s16 steering_offset_us;
+    u16 steering_pulse_us;
     suction_mode_t suction_mode;
     u16 suction_request_native;
     u16 adhesion_risk;

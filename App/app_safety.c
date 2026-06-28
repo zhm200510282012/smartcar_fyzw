@@ -9,10 +9,13 @@ safety_profile_t app_safety_select_profile(const app_context_t *ctx)
     if ((ctx->faults & FAULT_HARD_POWER) != 0u) {
         return SAFETY_PROFILE_HARD_POWER_OR_THERMAL_FAULT;
     }
-    if (ctx->app_state == APP_STATE_WALL_TRACK ||
+    if (ctx->app_state == APP_STATE_SUCTION_PRECHARGE ||
+        ctx->app_state == APP_STATE_APPROACH_TRANSITION ||
         ctx->app_state == APP_STATE_TRANSITION_UP ||
-        ctx->surface_state == SURFACE_WALL ||
-        ctx->surface_state == SURFACE_UNKNOWN) {
+        ctx->app_state == APP_STATE_WALL_TRACK ||
+        ctx->app_state == APP_STATE_TRANSITION_DOWN ||
+        ctx->app_state == APP_STATE_WALL_FAILSAFE_HOLD ||
+        ctx->surface_state == SURFACE_WALL) {
         if (ctx->faults != FAULT_NONE) {
             return SAFETY_PROFILE_WALL_OR_UNKNOWN_FAULT;
         }
@@ -31,22 +34,25 @@ void app_safety_apply_profile(app_context_t *ctx, safety_profile_t profile)
 
     if (profile == SAFETY_PROFILE_GROUND_FAULT) {
         /* GROUND_FAULT: drive zero, steering safe, suction off or cooldown. */
-        ctx->drive_cmd = DRIVE_SAFE_ZERO;
-        ctx->steering_cmd = STEERING_SAFE_CENTER;
+        ctx->drive_command_native = DRIVE_SAFE_ZERO;
+        ctx->steering_offset_us = 0;
+        ctx->steering_pulse_us = STEERING_SAFE_CENTER_US;
         ctx->suction_cmd.mode = SUCTION_OFF;
         ctx->suction_cmd.command_native = SUCTION_SAFE_OFF_NATIVE;
         ctx->app_state = APP_STATE_GROUND_FAULT;
     } else if (profile == SAFETY_PROFILE_WALL_OR_UNKNOWN_FAULT) {
         /* WALL_OR_UNKNOWN_FAULT: drive zero, steering safe, request emergency hold. */
-        ctx->drive_cmd = DRIVE_SAFE_ZERO;
-        ctx->steering_cmd = STEERING_SAFE_CENTER;
+        ctx->drive_command_native = DRIVE_SAFE_ZERO;
+        ctx->steering_offset_us = 0;
+        ctx->steering_pulse_us = STEERING_SAFE_CENTER_US;
         ctx->suction_cmd.mode = SUCTION_EMERGENCY_HOLD;
         ctx->suction_cmd.command_native = SUCTION_EMERGENCY_HOLD_NATIVE;
         ctx->app_state = APP_STATE_WALL_FAILSAFE_HOLD;
     } else if (profile == SAFETY_PROFILE_HARD_POWER_OR_THERMAL_FAULT) {
         /* HARD_POWER_OR_THERMAL_FAULT: protect electrical system first. */
-        ctx->drive_cmd = DRIVE_SAFE_ZERO;
-        ctx->steering_cmd = STEERING_SAFE_CENTER;
+        ctx->drive_command_native = DRIVE_SAFE_ZERO;
+        ctx->steering_offset_us = 0;
+        ctx->steering_pulse_us = STEERING_SAFE_CENTER_US;
         ctx->suction_cmd.mode = SUCTION_OFF;
         ctx->suction_cmd.command_native = SUCTION_SAFE_OFF_NATIVE;
         ctx->app_state = APP_STATE_HARD_FAULT;

@@ -1,0 +1,296 @@
+{
+  "scenario_count": 13,
+  "passed": 13,
+  "failed": 0,
+  "deterministic_tick_ms": 1,
+  "scenarios": {
+    "S01_ground_straight": {
+      "name": "S01_ground_straight",
+      "pass": true,
+      "notes": "ok; surfaces=GROUND/UNKNOWN",
+      "output_csv": "sim\\results\\S01_ground_straight.csv",
+      "state_sequence": [
+        "BOOT",
+        "SELF_CHECK",
+        "SENSOR_CALIBRATION",
+        "SAFE_GROUND_READY",
+        "ARMED_GROUND"
+      ],
+      "max_speed_cmd": 500,
+      "max_steering_cmd": 0,
+      "max_logical_suction_request": 0,
+      "max_hardware_suction_output": 0,
+      "fault_state": ""
+    },
+    "S02_ground_curve_left_right": {
+      "name": "S02_ground_curve_left_right",
+      "pass": true,
+      "notes": "ok; surfaces=GROUND/UNKNOWN",
+      "output_csv": "sim\\results\\S02_ground_curve_left_right.csv",
+      "state_sequence": [
+        "BOOT",
+        "SELF_CHECK",
+        "SENSOR_CALIBRATION",
+        "SAFE_GROUND_READY",
+        "ARMED_GROUND"
+      ],
+      "max_speed_cmd": 500,
+      "max_steering_cmd": 45,
+      "max_logical_suction_request": 0,
+      "max_hardware_suction_output": 0,
+      "fault_state": ""
+    },
+    "S03_ground_to_wall_transition_radius": {
+      "name": "S03_ground_to_wall_transition_radius",
+      "pass": true,
+      "notes": "ok; surfaces=GROUND/TRANSITION_UP/UNKNOWN/WALL",
+      "output_csv": "sim\\results\\S03_ground_to_wall_transition_radius.csv",
+      "state_sequence": [
+        "BOOT",
+        "SELF_CHECK",
+        "SENSOR_CALIBRATION",
+        "SAFE_GROUND_READY",
+        "ARMED_GROUND",
+        "PRECHARGE",
+        "APPROACH_TRANSITION",
+        "TRANSITION_UP",
+        "WALL_TRACK"
+      ],
+      "max_speed_cmd": 500,
+      "max_steering_cmd": 0,
+      "max_logical_suction_request": 0,
+      "max_hardware_suction_output": 0,
+      "fault_state": ""
+    },
+    "S04_vertical_wall_track": {
+      "name": "S04_vertical_wall_track",
+      "pass": true,
+      "notes": "ok; surfaces=GROUND/TRANSITION_UP/UNKNOWN/WALL",
+      "output_csv": "sim\\results\\S04_vertical_wall_track.csv",
+      "state_sequence": [
+        "BOOT",
+        "SELF_CHECK",
+        "SENSOR_CALIBRATION",
+        "SAFE_GROUND_READY",
+        "ARMED_GROUND",
+        "PRECHARGE",
+        "APPROACH_TRANSITION",
+        "TRANSITION_UP",
+        "WALL_TRACK"
+      ],
+      "max_speed_cmd": 500,
+      "max_steering_cmd": 0,
+      "max_logical_suction_request": 0,
+      "max_hardware_suction_output": 0,
+      "fault_state": ""
+    },
+    "S05_wall_to_ground_transition": {
+      "name": "S05_wall_to_ground_transition",
+      "pass": true,
+      "notes": "ok; surfaces=GROUND/TRANSITION_DOWN/TRANSITION_UP/UNKNOWN/WALL",
+      "output_csv": "sim\\results\\S05_wall_to_ground_transition.csv",
+      "state_sequence": [
+        "BOOT",
+        "SELF_CHECK",
+        "SENSOR_CALIBRATION",
+        "SAFE_GROUND_READY",
+        "ARMED_GROUND",
+        "PRECHARGE",
+        "APPROACH_TRANSITION",
+        "TRANSITION_UP",
+        "WALL_TRACK",
+        "TRANSITION_DOWN",
+        "GROUND_RECOVERY",
+        "FINISHED"
+      ],
+      "max_speed_cmd": 500,
+      "max_steering_cmd": 0,
+      "max_logical_suction_request": 0,
+      "max_hardware_suction_output": 0,
+      "fault_state": ""
+    },
+    "S06_cylindrical_or_curved_surface": {
+      "name": "S06_cylindrical_or_curved_surface",
+      "pass": true,
+      "notes": "ok; surfaces=GROUND/TRANSITION_UP/UNKNOWN/WALL",
+      "output_csv": "sim\\results\\S06_cylindrical_or_curved_surface.csv",
+      "state_sequence": [
+        "BOOT",
+        "SELF_CHECK",
+        "SENSOR_CALIBRATION",
+        "SAFE_GROUND_READY",
+        "ARMED_GROUND",
+        "PRECHARGE",
+        "APPROACH_TRANSITION",
+        "TRANSITION_UP",
+        "WALL_TRACK"
+      ],
+      "max_speed_cmd": 500,
+      "max_steering_cmd": 30,
+      "max_logical_suction_request": 0,
+      "max_hardware_suction_output": 0,
+      "fault_state": ""
+    },
+    "S07_sensor_stale_on_ground": {
+      "name": "S07_sensor_stale_on_ground",
+      "pass": true,
+      "notes": "ok; surfaces=GROUND/UNKNOWN",
+      "output_csv": "sim\\results\\S07_sensor_stale_on_ground.csv",
+      "state_sequence": [
+        "BOOT",
+        "SELF_CHECK",
+        "SENSOR_CALIBRATION",
+        "SAFE_GROUND_READY",
+        "ARMED_GROUND",
+        "GROUND_FAULT"
+      ],
+      "max_speed_cmd": 500,
+      "max_steering_cmd": 0,
+      "max_logical_suction_request": 0,
+      "max_hardware_suction_output": 0,
+      "fault_state": "GROUND_FAULT"
+    },
+    "S08_sensor_stale_on_wall": {
+      "name": "S08_sensor_stale_on_wall",
+      "pass": true,
+      "notes": "ok; surfaces=GROUND/TRANSITION_UP/UNKNOWN/WALL",
+      "output_csv": "sim\\results\\S08_sensor_stale_on_wall.csv",
+      "state_sequence": [
+        "BOOT",
+        "SELF_CHECK",
+        "SENSOR_CALIBRATION",
+        "SAFE_GROUND_READY",
+        "ARMED_GROUND",
+        "PRECHARGE",
+        "APPROACH_TRANSITION",
+        "TRANSITION_UP",
+        "WALL_TRACK",
+        "WALL_FAILSAFE_HOLD"
+      ],
+      "max_speed_cmd": 500,
+      "max_steering_cmd": 0,
+      "max_logical_suction_request": 0,
+      "max_hardware_suction_output": 0,
+      "fault_state": "WALL_FAILSAFE_HOLD"
+    },
+    "S09_transition_timeout": {
+      "name": "S09_transition_timeout",
+      "pass": true,
+      "notes": "ok; surfaces=GROUND/TRANSITION_UP/UNKNOWN",
+      "output_csv": "sim\\results\\S09_transition_timeout.csv",
+      "state_sequence": [
+        "BOOT",
+        "SELF_CHECK",
+        "SENSOR_CALIBRATION",
+        "SAFE_GROUND_READY",
+        "ARMED_GROUND",
+        "PRECHARGE",
+        "APPROACH_TRANSITION",
+        "TRANSITION_UP",
+        "WALL_FAILSAFE_HOLD"
+      ],
+      "max_speed_cmd": 500,
+      "max_steering_cmd": 0,
+      "max_logical_suction_request": 0,
+      "max_hardware_suction_output": 0,
+      "fault_state": "WALL_FAILSAFE_HOLD"
+    },
+    "S10_suction_unverified": {
+      "name": "S10_suction_unverified",
+      "pass": true,
+      "notes": "ok; surfaces=GROUND/TRANSITION_UP/UNKNOWN/WALL",
+      "output_csv": "sim\\results\\S10_suction_unverified.csv",
+      "state_sequence": [
+        "BOOT",
+        "SELF_CHECK",
+        "SENSOR_CALIBRATION",
+        "SAFE_GROUND_READY",
+        "ARMED_GROUND",
+        "PRECHARGE",
+        "APPROACH_TRANSITION",
+        "TRANSITION_UP",
+        "WALL_TRACK"
+      ],
+      "max_speed_cmd": 500,
+      "max_steering_cmd": 0,
+      "max_logical_suction_request": 0,
+      "max_hardware_suction_output": 0,
+      "fault_state": ""
+    },
+    "S11_encoder_dropout": {
+      "name": "S11_encoder_dropout",
+      "pass": true,
+      "notes": "ok; surfaces=GROUND/TRANSITION_UP/UNKNOWN/WALL",
+      "output_csv": "sim\\results\\S11_encoder_dropout.csv",
+      "state_sequence": [
+        "BOOT",
+        "SELF_CHECK",
+        "SENSOR_CALIBRATION",
+        "SAFE_GROUND_READY",
+        "ARMED_GROUND",
+        "PRECHARGE",
+        "APPROACH_TRANSITION",
+        "TRANSITION_UP",
+        "WALL_TRACK",
+        "WALL_FAILSAFE_HOLD"
+      ],
+      "max_speed_cmd": 500,
+      "max_steering_cmd": 0,
+      "max_logical_suction_request": 0,
+      "max_hardware_suction_output": 0,
+      "fault_state": "WALL_FAILSAFE_HOLD"
+    },
+    "S12_emag_loss": {
+      "name": "S12_emag_loss",
+      "pass": true,
+      "notes": "ok; surfaces=GROUND/TRANSITION_UP/UNKNOWN/WALL",
+      "output_csv": "sim\\results\\S12_emag_loss.csv",
+      "state_sequence": [
+        "BOOT",
+        "SELF_CHECK",
+        "SENSOR_CALIBRATION",
+        "SAFE_GROUND_READY",
+        "ARMED_GROUND",
+        "PRECHARGE",
+        "APPROACH_TRANSITION",
+        "TRANSITION_UP",
+        "WALL_TRACK",
+        "WALL_FAILSAFE_HOLD"
+      ],
+      "max_speed_cmd": 500,
+      "max_steering_cmd": 0,
+      "max_logical_suction_request": 0,
+      "max_hardware_suction_output": 0,
+      "fault_state": "WALL_FAILSAFE_HOLD"
+    },
+    "S13_imu_axis_or_pitch_abnormal": {
+      "name": "S13_imu_axis_or_pitch_abnormal",
+      "pass": true,
+      "notes": "ok; surfaces=CYLINDER/GROUND/TRANSITION_UP/UNKNOWN/WALL",
+      "output_csv": "sim\\results\\S13_imu_axis_or_pitch_abnormal.csv",
+      "state_sequence": [
+        "BOOT",
+        "SELF_CHECK",
+        "SENSOR_CALIBRATION",
+        "SAFE_GROUND_READY",
+        "ARMED_GROUND",
+        "PRECHARGE",
+        "APPROACH_TRANSITION",
+        "TRANSITION_UP",
+        "WALL_TRACK",
+        "WALL_FAILSAFE_HOLD"
+      ],
+      "max_speed_cmd": 500,
+      "max_steering_cmd": 0,
+      "max_logical_suction_request": 0,
+      "max_hardware_suction_output": 0,
+      "fault_state": "WALL_FAILSAFE_HOLD"
+    }
+  },
+  "safety": {
+    "suction_hw_verified": 0,
+    "hardware_suction_output_max": 0,
+    "real_bench_pass": false,
+    "real_wall_pass": false
+  }
+}

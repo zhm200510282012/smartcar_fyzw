@@ -2,25 +2,25 @@
 #include "../App/app_config.h"
 #include "board_map.h"
 
-static s16 g_drive_command;
+static s16 g_drive_command_native;
 
 void bsp_drive_init(void)
 {
-    g_drive_command = DRIVE_SAFE_ZERO;
+    g_drive_command_native = DRIVE_SAFE_ZERO;
 }
 
-void bsp_drive_apply(s16 command)
+void bsp_drive_apply(s16 drive_command_native)
 {
     if (BOARD_DRIVE_VERIFIED == 0) {
-        g_drive_command = DRIVE_SAFE_ZERO;
+        g_drive_command_native = DRIVE_SAFE_ZERO;
         return;
     }
-    if (command > DRIVE_LIMIT_ABS) command = DRIVE_LIMIT_ABS;
-    if (command < -DRIVE_LIMIT_ABS) command = -DRIVE_LIMIT_ABS;
-    g_drive_command = command;
+    if (drive_command_native > DRIVE_LIMIT_ABS) drive_command_native = DRIVE_LIMIT_ABS;
+    if (drive_command_native < -DRIVE_LIMIT_ABS) drive_command_native = -DRIVE_LIMIT_ABS;
+    g_drive_command_native = drive_command_native;
 }
 
-s16 bsp_drive_last_command(void)
+s16 bsp_drive_last_command_native(void)
 {
-    return g_drive_command;
+    return g_drive_command_native;
 }

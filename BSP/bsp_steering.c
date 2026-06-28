@@ -2,25 +2,25 @@
 #include "../App/app_config.h"
 #include "board_map.h"
 
-static s16 g_steering_command;
+static u16 g_steering_pulse_us;
 
 void bsp_steering_init(void)
 {
-    g_steering_command = STEERING_SAFE_CENTER;
+    g_steering_pulse_us = STEERING_SAFE_CENTER_US;
 }
 
-void bsp_steering_apply(s16 command)
+void bsp_steering_apply(u16 steering_pulse_us)
 {
     if (BOARD_STEERING_VERIFIED == 0) {
-        g_steering_command = STEERING_SAFE_CENTER;
+        g_steering_pulse_us = STEERING_SAFE_CENTER_US;
         return;
     }
-    if (command > STEERING_LIMIT_ABS) command = STEERING_LIMIT_ABS;
-    if (command < -STEERING_LIMIT_ABS) command = -STEERING_LIMIT_ABS;
-    g_steering_command = command;
+    if (steering_pulse_us < STEERING_MIN_PULSE_US) steering_pulse_us = STEERING_MIN_PULSE_US;
+    if (steering_pulse_us > STEERING_MAX_PULSE_US) steering_pulse_us = STEERING_MAX_PULSE_US;
+    g_steering_pulse_us = steering_pulse_us;
 }
 
-s16 bsp_steering_last_command(void)
+u16 bsp_steering_last_pulse_us(void)
 {
-    return g_steering_command;
+    return g_steering_pulse_us;
 }

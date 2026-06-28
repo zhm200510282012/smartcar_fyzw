@@ -33,6 +33,7 @@ typedef enum {
     APP_STATE_WALL_TRACK,
     APP_STATE_TRANSITION_DOWN,
     APP_STATE_GROUND_RECOVERY,
+    APP_STATE_FINISHED,
     APP_STATE_GROUND_FAULT,
     APP_STATE_WALL_FAILSAFE_HOLD,
     APP_STATE_HARD_FAULT
@@ -114,8 +115,9 @@ typedef struct {
     u8 test_mode;
     u16 adhesion_risk;
     s16 speed_limit_mm_s;
-    s16 drive_cmd;
-    s16 steering_cmd;
+    s16 drive_command_native;
+    s16 steering_offset_us;
+    u16 steering_pulse_us;
     suction_command_t suction_cmd;
     emag_sample_t emag;
     attitude_sample_t attitude;

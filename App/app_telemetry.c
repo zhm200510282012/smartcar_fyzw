@@ -1,4 +1,5 @@
 #include "app_telemetry.h"
+#include "app_config.h"
 
 telemetry_frame_t app_telemetry_make_frame(const app_context_t *ctx, u32 now_ms)
 {
@@ -10,8 +11,9 @@ telemetry_frame_t app_telemetry_make_frame(const app_context_t *ctx, u32 now_ms)
         t.faults = FAULT_HARD_POWER;
         t.line_error = 0;
         t.signal_quality = 0u;
-        t.drive_cmd = 0;
-        t.steering_cmd = 0;
+        t.drive_command_native = DRIVE_SAFE_ZERO;
+        t.steering_offset_us = 0;
+        t.steering_pulse_us = STEERING_SAFE_CENTER_US;
         t.suction_mode = SUCTION_OFF;
         t.suction_request_native = 0u;
         t.adhesion_risk = 1000u;
@@ -22,8 +24,9 @@ telemetry_frame_t app_telemetry_make_frame(const app_context_t *ctx, u32 now_ms)
     t.faults = ctx->faults;
     t.line_error = ctx->emag.line_error;
     t.signal_quality = ctx->emag.signal_quality;
-    t.drive_cmd = ctx->drive_cmd;
-    t.steering_cmd = ctx->steering_cmd;
+    t.drive_command_native = ctx->drive_command_native;
+    t.steering_offset_us = ctx->steering_offset_us;
+    t.steering_pulse_us = ctx->steering_pulse_us;
     t.suction_mode = ctx->suction_cmd.mode;
     t.suction_request_native = ctx->suction_cmd.command_native;
     t.adhesion_risk = ctx->adhesion_risk;
