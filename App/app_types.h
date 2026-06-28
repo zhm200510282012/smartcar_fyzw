@@ -34,6 +34,7 @@ typedef enum {
     APP_STATE_TRANSITION_DOWN,
     APP_STATE_GROUND_RECOVERY,
     APP_STATE_FINISHED,
+    APP_STATE_SUCTION_LOCKOUT,
     APP_STATE_GROUND_FAULT,
     APP_STATE_WALL_FAILSAFE_HOLD,
     APP_STATE_HARD_FAULT
@@ -57,7 +58,8 @@ typedef enum {
     FAULT_CONTROL_OVERRUN = 8u,
     FAULT_POWER_RISK = 16u,
     FAULT_SUCTION_UNVERIFIED = 32u,
-    FAULT_HARD_POWER = 64u
+    FAULT_HARD_POWER = 64u,
+    FAULT_SUCTION_LOCKOUT = 128u
 } fault_code_t;
 
 typedef struct {
@@ -112,6 +114,7 @@ typedef struct {
     u16 state_elapsed_ms;
     u8 manual_arm;
     u8 manual_suction_authorize;
+    u8 transition_candidate;
     u8 test_mode;
     u16 adhesion_risk;
     s16 speed_limit_mm_s;

@@ -1,11 +1,22 @@
 #include "ctrl_adhesion.h"
+#include "../App/app_build_profile.h"
 #include "../App/app_config.h"
+
+static u16 logical_suction_request(u16 real_native, u16 host_logical)
+{
+    if (HOST_SIL_LOGICAL_SUCTION_AVAILABLE != 0) {
+        return host_logical;
+    }
+    return real_native;
+}
 
 static u16 base_by_surface(surface_state_t surface)
 {
-    if (surface == SURFACE_WALL) return SUCTION_HOLD_NATIVE;
-    if (surface == SURFACE_TRANSITION_UP || surface == SURFACE_TRANSITION_DOWN) return SUCTION_PRECHARGE_NATIVE;
-    return SUCTION_IDLE_NATIVE;
+    if (surface == SURFACE_WALL) return logical_suction_request(SUCTION_HOLD_NATIVE, APP_LOGICAL_SUCTION_HOLD_REQUEST);
+    if (surface == SURFACE_TRANSITION_UP || surface == SURFACE_TRANSITION_DOWN) {
+        return logical_suction_request(SUCTION_PRECHARGE_NATIVE, APP_LOGICAL_SUCTION_PRECHARGE_REQUEST);
+    }
+    return logical_suction_request(SUCTION_IDLE_NATIVE, SUCTION_IDLE_NATIVE);
 }
 
 static u16 estimate_adhesion_risk(const app_context_t *ctx)
@@ -33,20 +44,25 @@ void ctrl_adhesion_update(app_context_t *ctx)
     if (ctx->app_state == APP_STATE_SUCTION_PRECHARGE ||
         ctx->app_state == APP_STATE_APPROACH_TRANSITION) {
         ctx->suction_cmd.mode = SUCTION_PRECHARGE;
-        request = SUCTION_PRECHARGE_NATIVE;
+        request = logical_suction_request(SUCTION_PRECHARGE_NATIVE, APP_LOGICAL_SUCTION_PRECHARGE_REQUEST);
     } else if (ctx->app_state == APP_STATE_WALL_TRACK) {
         ctx->suction_cmd.mode = SUCTION_HOLD;
-        request = SUCTION_HOLD_NATIVE;
+        request = logical_suction_request(SUCTION_HOLD_NATIVE, APP_LOGICAL_SUCTION_HOLD_REQUEST);
     } else if (ctx->adhesion_risk > ADHESION_RISK_LIMIT) {
         ctx->suction_cmd.mode = SUCTION_BOOST;
-        request = SUCTION_BOOST_NATIVE;
+        request = logical_suction_request(SUCTION_BOOST_NATIVE, APP_LOGICAL_SUCTION_BOOST_REQUEST);
     } else {
         ctx->suction_cmd.mode = SUCTION_IDLE;
     }
 
     if (ctx->app_state == APP_STATE_WALL_FAILSAFE_HOLD) {
         ctx->suction_cmd.mode = SUCTION_EMERGENCY_HOLD;
-        request = SUCTION_EMERGENCY_HOLD_NATIVE;
+        request = logical_suction_request(SUCTION_EMERGENCY_HOLD_NATIVE, APP_LOGICAL_SUCTION_EMERGENCY_REQUEST);
+    }
+
+    if (ctx->app_state == APP_STATE_SUCTION_LOCKOUT) {
+        ctx->suction_cmd.mode = SUCTION_OFF;
+        request = SUCTION_SAFE_OFF_NATIVE;
     }
 
     ctx->suction_cmd.command_native = request;

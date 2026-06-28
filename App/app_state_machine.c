@@ -1,4 +1,5 @@
 #include "app_state_machine.h"
+#include "app_build_profile.h"
 #include "app_config.h"
 
 static u8 sensors_ready(const app_context_t *ctx)
@@ -22,6 +23,11 @@ static u8 transition_up_observed(const app_context_t *ctx)
     return (ctx->surface_state == SURFACE_TRANSITION_UP || ctx->surface_state == SURFACE_WALL);
 }
 
+static u8 transition_candidate_detected(const app_context_t *ctx)
+{
+    return (ctx->transition_candidate == APP_TRUE);
+}
+
 static u8 wall_observed(const app_context_t *ctx)
 {
     return (ctx->surface_state == SURFACE_WALL);
@@ -43,6 +49,7 @@ void app_state_machine_init(app_context_t *ctx)
     ctx->state_elapsed_ms = 0u;
     ctx->manual_arm = APP_FALSE;
     ctx->manual_suction_authorize = APP_FALSE;
+    ctx->transition_candidate = APP_FALSE;
     ctx->test_mode = APP_TEST_MODE;
     ctx->adhesion_risk = 1000u;
     ctx->speed_limit_mm_s = DRIVE_SAFE_ZERO;
@@ -96,19 +103,26 @@ void app_state_machine_step(app_context_t *ctx, u16 dt_ms)
         }
         break;
     case APP_STATE_ARMED_GROUND:
-        if (ctx->manual_suction_authorize && sensors_ready(ctx) && transition_up_observed(ctx)) {
-            enter_state(ctx, APP_STATE_SUCTION_PRECHARGE);
+        if (ctx->manual_suction_authorize && sensors_ready(ctx) && transition_candidate_detected(ctx)) {
+            if (APP_WALL_STATE_CAPABLE != 0) {
+                enter_state(ctx, APP_STATE_SUCTION_PRECHARGE);
+            } else {
+                ctx->faults = (fault_code_t)(ctx->faults | FAULT_SUCTION_LOCKOUT);
+                enter_state(ctx, APP_STATE_SUCTION_LOCKOUT);
+            }
         }
         break;
     case APP_STATE_SUCTION_PRECHARGE:
-        if (!sensors_ready(ctx) || ctx->state_elapsed_ms > TRANSITION_TIMEOUT_MS) {
+        if (!sensors_ready(ctx) || !transition_candidate_detected(ctx) || ctx->state_elapsed_ms > TRANSITION_TIMEOUT_MS) {
             ctx->faults = (fault_code_t)(ctx->faults | FAULT_SENSOR_STALE);
-        } else if (ctx->state_elapsed_ms >= PRECHARGE_MIN_TIME_MS && transition_up_observed(ctx)) {
+        } else if (ctx->state_elapsed_ms >= PRECHARGE_MIN_TIME_MS) {
             enter_state(ctx, APP_STATE_APPROACH_TRANSITION);
         }
         break;
     case APP_STATE_APPROACH_TRANSITION:
-        if (!sensors_ready(ctx) || ctx->state_elapsed_ms > TRANSITION_TIMEOUT_MS) {
+        if (!sensors_ready(ctx) ||
+            (!transition_candidate_detected(ctx) && !transition_up_observed(ctx)) ||
+            ctx->state_elapsed_ms > TRANSITION_TIMEOUT_MS) {
             ctx->faults = (fault_code_t)(ctx->faults | FAULT_SENSOR_STALE);
         } else if (transition_up_observed(ctx)) {
             enter_state(ctx, APP_STATE_TRANSITION_UP);
@@ -140,6 +154,7 @@ void app_state_machine_step(app_context_t *ctx, u16 dt_ms)
             enter_state(ctx, APP_STATE_FINISHED);
         }
         break;
+    case APP_STATE_SUCTION_LOCKOUT:
     case APP_STATE_GROUND_FAULT:
     case APP_STATE_WALL_FAILSAFE_HOLD:
     case APP_STATE_HARD_FAULT:

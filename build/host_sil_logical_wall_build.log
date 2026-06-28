@@ -1,0 +1,6 @@
+COMMAND:
+C:\Users\zhm\AppData\Roaming\Python\Python38\Scripts\python-zig.exe cc -std=c99 -Wall -Wextra -Werror -DHOST_SIL=1 -DHOST_SIL_LOGICAL_WALL_PROFILE=1 -I. -IApp -IBSP -IControl -ITrack -Isim/host -o D:\smartcar21\smartcar_fyzw\sim\host\host_sil_logical_wall.exe D:\smartcar21\smartcar_fyzw\sim\host\sil_runner.c D:\smartcar21\smartcar_fyzw\sim\host\host_bsp.c D:\smartcar21\smartcar_fyzw\App\app_scheduler.c D:\smartcar21\smartcar_fyzw\App\app_state_machine.c D:\smartcar21\smartcar_fyzw\App\app_safety.c D:\smartcar21\smartcar_fyzw\App\app_telemetry.c D:\smartcar21\smartcar_fyzw\App\app_params.c D:\smartcar21\smartcar_fyzw\Control\ctrl_adhesion.c D:\smartcar21\smartcar_fyzw\Control\ctrl_attitude.c D:\smartcar21\smartcar_fyzw\Control\ctrl_line.c D:\smartcar21\smartcar_fyzw\Control\ctrl_profile.c D:\smartcar21\smartcar_fyzw\Control\ctrl_signal.c D:\smartcar21\smartcar_fyzw\Control\ctrl_speed.c D:\smartcar21\smartcar_fyzw\Control\ctrl_steering.c D:\smartcar21\smartcar_fyzw\Control\ctrl_transition.c D:\smartcar21\smartcar_fyzw\Control\ctrl_vehicle.c D:\smartcar21\smartcar_fyzw\Track\track_features.c D:\smartcar21\smartcar_fyzw\Track\track_state_machine.c D:\smartcar21\smartcar_fyzw\Track\track_strategy.c D:\smartcar21\smartcar_fyzw\Track\track_surface_state.c
+
+OUTPUT:
+
+EXIT_CODE: 0

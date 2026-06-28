@@ -7,6 +7,7 @@ typedef struct {
     u32 time_ms;
     u8 manual_arm;
     u8 suction_authorize;
+    u8 transition_candidate;
     u8 emag_valid;
     s16 line_error;
     u16 signal_quality;
@@ -22,5 +23,6 @@ typedef struct {
 
 void host_bsp_reset(void);
 void host_bsp_set_input(const host_sil_input_t *input);
+u8 host_bsp_transition_candidate(void);
 
 #endif

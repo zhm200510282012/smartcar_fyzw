@@ -37,6 +37,7 @@ static int parse_input_line(const char *line, host_sil_input_t *input)
     unsigned long time_ms;
     int manual_arm;
     int suction_authorize;
+    int transition_candidate;
     int emag_valid;
     int line_error;
     unsigned int signal_quality;
@@ -51,10 +52,11 @@ static int parse_input_line(const char *line, host_sil_input_t *input)
     int parsed;
 
     parsed = sscanf(line,
-                    "%lu,%d,%d,%d,%d,%u,%d,%d,%d,%ld,%ld,%d,%d,%d",
+                    "%lu,%d,%d,%d,%d,%d,%u,%d,%d,%d,%ld,%ld,%d,%d,%d",
                     &time_ms,
                     &manual_arm,
                     &suction_authorize,
+                    &transition_candidate,
                     &emag_valid,
                     &line_error,
                     &signal_quality,
@@ -66,13 +68,14 @@ static int parse_input_line(const char *line, host_sil_input_t *input)
                     &left_speed_mm_s,
                     &right_speed_mm_s,
                     &power_ok);
-    if (parsed != 14) {
+    if (parsed != 15) {
         return 0;
     }
 
     input->time_ms = (u32)time_ms;
     input->manual_arm = manual_arm ? APP_TRUE : APP_FALSE;
     input->suction_authorize = suction_authorize ? APP_TRUE : APP_FALSE;
+    input->transition_candidate = transition_candidate ? APP_TRUE : APP_FALSE;
     input->emag_valid = emag_valid ? APP_TRUE : APP_FALSE;
     input->line_error = (s16)line_error;
     input->signal_quality = (u16)signal_quality;
@@ -91,7 +94,8 @@ static void write_output_header(FILE *out)
 {
     fputs("time_ms,app_state,surface_state,faults,drive_command_native,"
           "steering_offset_us,steering_pulse_us,suction_mode,"
-          "logical_suction_request,hardware_suction_output,adhesion_risk\n",
+          "logical_suction_request,hardware_suction_output,adhesion_risk,"
+          "state_elapsed_ms,transition_candidate,transition_up_observed\n",
           out);
 }
 
@@ -103,7 +107,7 @@ static void write_output_line(FILE *out, const app_context_t *ctx, u32 now_ms)
     frame = app_telemetry_make_frame(ctx, now_ms);
     suction = bsp_suction_last_command();
     fprintf(out,
-            "%lu,%u,%u,%u,%d,%d,%u,%u,%u,%u,%u\n",
+            "%lu,%u,%u,%u,%d,%d,%u,%u,%u,%u,%u,%u,%u,%u\n",
             (unsigned long)frame.timestamp_ms,
             (unsigned int)frame.app_state,
             (unsigned int)frame.surface_state,
@@ -114,7 +118,10 @@ static void write_output_line(FILE *out, const app_context_t *ctx, u32 now_ms)
             (unsigned int)suction.mode,
             (unsigned int)frame.suction_request_native,
             (unsigned int)bsp_suction_last_native_output(),
-            (unsigned int)frame.adhesion_risk);
+            (unsigned int)frame.adhesion_risk,
+            (unsigned int)ctx->state_elapsed_ms,
+            (unsigned int)ctx->transition_candidate,
+            (unsigned int)(ctx->surface_state == SURFACE_TRANSITION_UP || ctx->surface_state == SURFACE_WALL));
 }
 
 static int run_tick_until(app_context_t *ctx, FILE *out, u32 target_time_ms)

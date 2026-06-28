@@ -1,4 +1,5 @@
 import glob
+import argparse
 import os
 import shutil
 import subprocess
@@ -9,8 +10,6 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BUILD_DIR = REPO_ROOT / "build"
-EXE_PATH = REPO_ROOT / "sim" / "host" / ("host_sil.exe" if os.name == "nt" else "host_sil")
-BUILD_LOG = BUILD_DIR / "host_sil_build.log"
 
 
 SOURCES = [
@@ -80,11 +79,30 @@ def find_compiler():
     return None
 
 
-def build():
+def profile_flags(profile):
+    if profile == "guard":
+        return ["-DHOST_SIL_GUARD_PROFILE=1"]
+    if profile == "logical_wall":
+        return ["-DHOST_SIL_LOGICAL_WALL_PROFILE=1"]
+    raise ValueError(f"unknown profile {profile}")
+
+
+def profile_exe_path(profile):
+    suffix = ".exe" if os.name == "nt" else ""
+    return REPO_ROOT / "sim" / "host" / f"host_sil_{profile}{suffix}"
+
+
+def profile_log_path(profile):
+    return BUILD_DIR / f"host_sil_{profile}_build.log"
+
+
+def build(profile="guard"):
     compiler = find_compiler()
     BUILD_DIR.mkdir(parents=True, exist_ok=True)
+    build_log = profile_log_path(profile)
+    exe_path = profile_exe_path(profile)
     if compiler is None:
-        BUILD_LOG.write_text("No host C compiler found. Tried HOST_SIL_CC, gcc, clang, cc, zig cc, python-zig.exe cc.\n", encoding="utf-8")
+        build_log.write_text("No host C compiler found. Tried HOST_SIL_CC, gcc, clang, cc, zig cc, python-zig.exe cc.\n", encoding="utf-8")
         return 2
 
     cmd = (
@@ -95,6 +113,7 @@ def build():
             "-Wextra",
             "-Werror",
             "-DHOST_SIL=1",
+            *profile_flags(profile),
             "-I.",
             "-IApp",
             "-IBSP",
@@ -102,7 +121,7 @@ def build():
             "-ITrack",
             "-Isim/host",
             "-o",
-            str(EXE_PATH),
+            str(exe_path),
         ]
         + [str(REPO_ROOT / source) for source in SOURCES]
     )
@@ -115,7 +134,7 @@ def build():
         stderr=subprocess.STDOUT,
     )
 
-    BUILD_LOG.write_text(
+    build_log.write_text(
         "COMMAND:\n"
         + " ".join(cmd)
         + "\n\nOUTPUT:\n"
@@ -125,14 +144,17 @@ def build():
     )
 
     if result.returncode == 0:
-        print(EXE_PATH)
+        print(exe_path)
     else:
-        print(BUILD_LOG)
+        print(build_log)
     return result.returncode
 
 
 def main():
-    return build()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--profile", choices=("guard", "logical_wall"), default="guard")
+    args = parser.parse_args()
+    return build(args.profile)
 
 
 if __name__ == "__main__":

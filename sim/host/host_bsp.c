@@ -24,6 +24,7 @@ void host_bsp_reset(void)
     g_input.time_ms = 0ul;
     g_input.manual_arm = APP_FALSE;
     g_input.suction_authorize = APP_FALSE;
+    g_input.transition_candidate = APP_FALSE;
     g_input.emag_valid = APP_TRUE;
     g_input.line_error = 0;
     g_input.signal_quality = LINE_QUALITY_MIN;
@@ -52,6 +53,11 @@ void host_bsp_set_input(const host_sil_input_t *input)
     if (input != 0) {
         g_input = *input;
     }
+}
+
+u8 host_bsp_transition_candidate(void)
+{
+    return g_input.transition_candidate;
 }
 
 void bsp_timebase_init(void)

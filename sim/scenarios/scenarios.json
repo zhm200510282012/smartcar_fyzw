@@ -1,15 +1,15 @@
 [
-  {"name": "S01_ground_straight", "kind": "ground", "expect": "ground_ok"},
-  {"name": "S02_ground_curve_left_right", "kind": "ground_curve", "expect": "ground_ok"},
-  {"name": "S03_ground_to_wall_transition_radius", "kind": "up_to_wall", "expect": "wall_track"},
-  {"name": "S04_vertical_wall_track", "kind": "wall_hold", "expect": "wall_track"},
-  {"name": "S05_wall_to_ground_transition", "kind": "up_wall_down", "expect": "finished"},
-  {"name": "S06_cylindrical_or_curved_surface", "kind": "curved_wall", "expect": "wall_track"},
-  {"name": "S07_sensor_stale_on_ground", "kind": "ground_imu_stale", "expect": "ground_fault"},
-  {"name": "S08_sensor_stale_on_wall", "kind": "wall_imu_stale", "expect": "wall_failsafe"},
-  {"name": "S09_transition_timeout", "kind": "transition_timeout", "expect": "wall_failsafe"},
-  {"name": "S10_suction_unverified", "kind": "up_to_wall", "expect": "suction_unverified"},
-  {"name": "S11_encoder_dropout", "kind": "wall_encoder_dropout", "expect": "wall_failsafe"},
-  {"name": "S12_emag_loss", "kind": "wall_emag_loss", "expect": "wall_failsafe"},
-  {"name": "S13_imu_axis_or_pitch_abnormal", "kind": "imu_pitch_abnormal", "expect": "wall_failsafe"}
+  {"name": "S01_ground_straight", "profile": "guard", "kind": "ground", "expect": "ground_ok"},
+  {"name": "S02_ground_curve_left_right", "profile": "guard", "kind": "ground_curve", "expect": "ground_ok"},
+  {"name": "S03_ground_to_wall_transition_radius", "profile": "logical_wall", "kind": "up_to_wall", "expect": "wall_track"},
+  {"name": "S04_vertical_wall_track", "profile": "logical_wall", "kind": "wall_hold", "expect": "wall_track"},
+  {"name": "S05_wall_to_ground_transition", "profile": "logical_wall", "kind": "up_wall_down", "expect": "finished"},
+  {"name": "S06_cylindrical_or_curved_surface", "profile": "logical_wall", "kind": "curved_wall", "expect": "wall_track"},
+  {"name": "S07_sensor_stale_on_ground", "profile": "guard", "kind": "ground_imu_stale", "expect": "ground_fault"},
+  {"name": "S08_sensor_stale_on_wall", "profile": "logical_wall", "kind": "wall_imu_stale", "expect": "wall_failsafe"},
+  {"name": "S09_transition_timeout", "profile": "logical_wall", "kind": "transition_timeout", "expect": "wall_failsafe"},
+  {"name": "S10_suction_unverified", "profile": "guard", "kind": "suction_lockout", "expect": "suction_lockout"},
+  {"name": "S11_encoder_dropout", "profile": "logical_wall", "kind": "wall_encoder_dropout", "expect": "wall_failsafe"},
+  {"name": "S12_emag_loss", "profile": "logical_wall", "kind": "wall_emag_loss", "expect": "wall_failsafe"},
+  {"name": "S13_imu_axis_or_pitch_abnormal", "profile": "logical_wall", "kind": "imu_pitch_abnormal", "expect": "wall_failsafe"}
 ]

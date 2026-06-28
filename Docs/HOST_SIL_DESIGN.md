@@ -4,6 +4,11 @@
 
 Host-SIL compiles the current project `App`, `Control`, and `Track` C modules against `sim/host/host_bsp.c`. It does not compile AI8051U register access, official Longqiu driver code, C251 startup, or ISR implementations.
 
+The P0 suite has two explicit build profiles:
+
+- `guard`: wall-state entry disabled while `SUCTION_HW_VERIFIED=0`.
+- `logical_wall`: host-only logical wall-state coverage enabled while `SUCTION_HW_VERIFIED=0` and hardware suction output remains zero.
+
 The purpose is to validate deterministic software sequencing and safety arbitration before bench work. It is not evidence that the vehicle can drive, generate suction, or run on a wall.
 
 ## Deterministic Clock
@@ -34,11 +39,13 @@ Final safety arbitration remains the last software decision before BSP apply.
 
 ## State Flow
 
-The implemented flow is:
+The implemented logical-wall flow is:
 
-`BOOT -> SELF_CHECK -> SENSOR_CALIBRATION -> SAFE_GROUND_READY -> ARMED_GROUND -> PRECHARGE -> APPROACH_TRANSITION -> TRANSITION_UP -> WALL_TRACK -> TRANSITION_DOWN -> GROUND_RECOVERY -> FINISHED`
+`BOOT -> SELF_CHECK -> SENSOR_CALIBRATION -> SAFE_GROUND_READY -> ARMED_GROUND -> transition_candidate_detected -> PRECHARGE -> APPROACH_TRANSITION -> TRANSITION_UP -> WALL_TRACK -> TRANSITION_DOWN -> GROUND_RECOVERY -> FINISHED`
 
 Any active state can be forced into `GROUND_FAULT`, `WALL_FAILSAFE_HOLD`, or `HARD_FAULT` by latched faults. Wall-related faults use `WALL_FAILSAFE_HOLD`; ground-only faults use `GROUND_FAULT`.
+
+If a suction/wall request and transition candidate occur while wall-state capability is disabled, the machine enters `SUCTION_LOCKOUT` instead of any wall-related state.
 
 ## Host BSP Boundary
 

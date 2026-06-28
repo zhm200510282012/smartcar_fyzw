@@ -21,6 +21,9 @@
 #include "../Track/track_state_machine.h"
 #include "../Track/track_strategy.h"
 #include "../Track/track_surface_state.h"
+#ifdef HOST_SIL
+#include "../sim/host/host_bsp.h"
+#endif
 
 static u32 g_last_fast;
 static u32 g_last_control;
@@ -72,6 +75,15 @@ static void update_sensor_health(app_context_t *ctx, u32 now_ms)
     }
 }
 
+static u8 read_transition_candidate(void)
+{
+#ifdef HOST_SIL
+    return host_bsp_transition_candidate();
+#else
+    return APP_FALSE;
+#endif
+}
+
 void app_scheduler_init(void)
 {
     g_last_fast = 0ul;
@@ -101,6 +113,7 @@ void app_scheduler_run_due(app_context_t *ctx, u32 now_ms)
         g_last_control = now_ms;
         ctx->emag = ctrl_line_update(ctx->emag);
         ctx->attitude = ctrl_attitude_update(ctx->attitude, TASK_CONTROL_PERIOD_MS);
+        ctx->transition_candidate = read_transition_candidate();
         update_sensor_health(ctx, now_ms);
         ctx->surface_state = track_surface_state_update(ctx->surface_state, &ctx->attitude);
         feature_transition = track_features_detect_transition(&ctx->emag);

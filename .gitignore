@@ -24,6 +24,7 @@ MDK_Project/Objects/
 *.bin
 sim/host/host_sil
 sim/host/host_sil.exe
+sim/host/host_sil_*
 sim/host/*.pdb
 sim/tests/__pycache__/
 __pycache__/
