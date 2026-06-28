@@ -1,0 +1,126 @@
+#ifndef APP_TYPES_H
+#define APP_TYPES_H
+
+typedef unsigned char u8;
+typedef signed char s8;
+typedef unsigned int u16;
+typedef signed int s16;
+typedef unsigned long u32;
+typedef signed long s32;
+
+#define APP_TRUE 1u
+#define APP_FALSE 0u
+
+typedef enum {
+    SURFACE_UNKNOWN = 0,
+    SURFACE_GROUND,
+    SURFACE_TRANSITION_UP,
+    SURFACE_WALL,
+    SURFACE_CYLINDER,
+    SURFACE_TRANSITION_DOWN,
+    SURFACE_DISABLED_UNVERIFIED
+} surface_state_t;
+
+typedef enum {
+    APP_STATE_BOOT = 0,
+    APP_STATE_SELF_TEST,
+    APP_STATE_SENSOR_CALIBRATION,
+    APP_STATE_SAFE_GROUND_READY,
+    APP_STATE_ARMED_GROUND,
+    APP_STATE_SUCTION_PRECHARGE,
+    APP_STATE_APPROACH_TRANSITION,
+    APP_STATE_TRANSITION_UP,
+    APP_STATE_WALL_TRACK,
+    APP_STATE_TRANSITION_DOWN,
+    APP_STATE_GROUND_RECOVERY,
+    APP_STATE_GROUND_FAULT,
+    APP_STATE_WALL_FAILSAFE_HOLD,
+    APP_STATE_HARD_FAULT
+} app_state_t;
+
+typedef enum {
+    SUCTION_OFF = 0,
+    SUCTION_IDLE,
+    SUCTION_PRECHARGE,
+    SUCTION_HOLD,
+    SUCTION_BOOST,
+    SUCTION_COOLDOWN,
+    SUCTION_EMERGENCY_HOLD
+} suction_mode_t;
+
+typedef enum {
+    FAULT_NONE = 0,
+    FAULT_SENSOR_STALE = 1u,
+    FAULT_LINE_LOST = 2u,
+    FAULT_ENCODER_INVALID = 4u,
+    FAULT_CONTROL_OVERRUN = 8u,
+    FAULT_POWER_RISK = 16u,
+    FAULT_SUCTION_UNVERIFIED = 32u,
+    FAULT_HARD_POWER = 64u
+} fault_code_t;
+
+typedef struct {
+    suction_mode_t mode;
+    u16 command_native;
+    u8 armed;
+    u8 hw_verified;
+    u8 feedback_valid;
+    u8 fault_code;
+} suction_command_t;
+
+typedef struct {
+    u16 raw[5];
+    u16 filtered[5];
+    u16 norm[5];
+    s16 line_error;
+    u16 signal_quality;
+    u8 channel_count;
+    u8 valid;
+} emag_sample_t;
+
+typedef struct {
+    s16 roll_cdeg;
+    s16 pitch_cdeg;
+    s16 yaw_rate_cdeg_s;
+    u32 timestamp_ms;
+    u8 id_ok;
+    u8 fresh;
+} attitude_sample_t;
+
+typedef struct {
+    s32 left_count;
+    s32 right_count;
+    s16 left_speed_mm_s;
+    s16 right_speed_mm_s;
+    u8 valid;
+} encoder_sample_t;
+
+typedef struct {
+    u8 emag_ok;
+    u8 imu_fresh;
+    u8 encoder_ok;
+    u8 power_ok;
+    u8 control_period_ok;
+    u8 suction_feedback_ok;
+} sensor_health_t;
+
+typedef struct {
+    app_state_t app_state;
+    surface_state_t surface_state;
+    fault_code_t faults;
+    u16 state_elapsed_ms;
+    u8 manual_arm;
+    u8 manual_suction_authorize;
+    u8 test_mode;
+    u16 adhesion_risk;
+    s16 speed_limit_mm_s;
+    s16 drive_cmd;
+    s16 steering_cmd;
+    suction_command_t suction_cmd;
+    emag_sample_t emag;
+    attitude_sample_t attitude;
+    encoder_sample_t encoder;
+    sensor_health_t health;
+} app_context_t;
+
+#endif

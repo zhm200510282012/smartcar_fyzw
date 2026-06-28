@@ -1,0 +1,31 @@
+# Build outputs
+build/
+MDK_Project/OBJ_Out/
+MDK_Project/Listings/
+MDK_Project/Objects/
+
+# Keil local user/session state
+*.uvopt
+*.uvoptx
+*.uvgui.*
+*.uvguix.*
+
+# Compiler intermediates
+*.obj
+*.lst
+*.crf
+*.lnp
+*.map
+*.htm
+*.hex
+*.bin
+
+# Local editor and OS noise
+.vscode/
+.vs/
+.idea/
+*.swp
+*.tmp
+*.bak
+Thumbs.db
+Desktop.ini

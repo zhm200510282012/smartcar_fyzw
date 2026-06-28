@@ -1,0 +1,5 @@
+[submodule "Legacy_Reference/9.7"]
+	path = Legacy_Reference/9.7
+	url = https://github.com/zhm200510282012/demo-repo.git
+	branch = main
+	ignore = untracked
