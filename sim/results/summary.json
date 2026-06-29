@@ -15,7 +15,7 @@
       "scenario_count": 9,
       "passed": 9,
       "failed": 0,
-      "max_logical_suction_request": 1200,
+      "max_logical_suction_request": 1450,
       "max_hardware_suction_output": 0
     }
   },
@@ -55,7 +55,7 @@
         "GROUND_TRACK"
       ],
       "max_speed_cmd": 145,
-      "max_steering_cmd": 9,
+      "max_steering_cmd": 0,
       "max_logical_suction_request": 0,
       "max_hardware_suction_output": 0,
       "fault_state": ""
@@ -81,7 +81,7 @@
       ],
       "max_speed_cmd": 145,
       "max_steering_cmd": 0,
-      "max_logical_suction_request": 1200,
+      "max_logical_suction_request": 1450,
       "max_hardware_suction_output": 0,
       "fault_state": ""
     },
@@ -106,7 +106,7 @@
       ],
       "max_speed_cmd": 145,
       "max_steering_cmd": 0,
-      "max_logical_suction_request": 1200,
+      "max_logical_suction_request": 1450,
       "max_hardware_suction_output": 0,
       "fault_state": ""
     },
@@ -134,7 +134,7 @@
       ],
       "max_speed_cmd": 145,
       "max_steering_cmd": 0,
-      "max_logical_suction_request": 1200,
+      "max_logical_suction_request": 1450,
       "max_hardware_suction_output": 0,
       "fault_state": ""
     },
@@ -158,8 +158,8 @@
         "WALL_TRACK"
       ],
       "max_speed_cmd": 145,
-      "max_steering_cmd": 7,
-      "max_logical_suction_request": 1200,
+      "max_steering_cmd": 0,
+      "max_logical_suction_request": 1450,
       "max_hardware_suction_output": 0,
       "fault_state": ""
     },
@@ -206,7 +206,7 @@
       ],
       "max_speed_cmd": 145,
       "max_steering_cmd": 0,
-      "max_logical_suction_request": 1200,
+      "max_logical_suction_request": 1450,
       "max_hardware_suction_output": 0,
       "fault_state": "WALL_FAILSAFE_HOLD"
     },
@@ -226,12 +226,11 @@
         "TRANSITION_CANDIDATE",
         "SUCTION_PRECHARGE",
         "APPROACH_TRANSITION",
-        "TRANSITION_UP",
         "WALL_FAILSAFE_HOLD"
       ],
       "max_speed_cmd": 145,
       "max_steering_cmd": 0,
-      "max_logical_suction_request": 1100,
+      "max_logical_suction_request": 1450,
       "max_hardware_suction_output": 0,
       "fault_state": "WALL_FAILSAFE_HOLD"
     },
@@ -278,7 +277,7 @@
       ],
       "max_speed_cmd": 145,
       "max_steering_cmd": 0,
-      "max_logical_suction_request": 1200,
+      "max_logical_suction_request": 1450,
       "max_hardware_suction_output": 0,
       "fault_state": "WALL_FAILSAFE_HOLD"
     },
@@ -304,7 +303,7 @@
       ],
       "max_speed_cmd": 145,
       "max_steering_cmd": 0,
-      "max_logical_suction_request": 1200,
+      "max_logical_suction_request": 1450,
       "max_hardware_suction_output": 0,
       "fault_state": "WALL_FAILSAFE_HOLD"
     },
@@ -312,7 +311,7 @@
       "name": "S13_imu_axis_or_pitch_abnormal",
       "profile": "logical_wall",
       "pass": true,
-      "notes": "ok; surfaces=CYLINDER/GROUND/TRANSITION_UP/UNKNOWN/WALL",
+      "notes": "ok; surfaces=CYLINDER/GROUND/TRANSITION_DOWN/TRANSITION_UP/UNKNOWN/WALL",
       "output_csv": "sim\\results\\logical_wall_S13_imu_axis_or_pitch_abnormal.csv",
       "state_sequence": [
         "BOOT",
@@ -330,7 +329,7 @@
       ],
       "max_speed_cmd": 145,
       "max_steering_cmd": 0,
-      "max_logical_suction_request": 1200,
+      "max_logical_suction_request": 1450,
       "max_hardware_suction_output": 0,
       "fault_state": "WALL_FAILSAFE_HOLD"
     }

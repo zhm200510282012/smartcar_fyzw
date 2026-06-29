@@ -9,21 +9,7 @@ static s16 clamp_drive(s16 value)
     return value;
 }
 
-static u16 clamp_steering_left(u16 value)
-{
-    if (value < STEERING_LEFT_MIN_US) return STEERING_LEFT_MIN_US;
-    if (value > STEERING_LEFT_MAX_US) return STEERING_LEFT_MAX_US;
-    return value;
-}
-
-static u16 clamp_steering_right(u16 value)
-{
-    if (value < STEERING_RIGHT_MIN_US) return STEERING_RIGHT_MIN_US;
-    if (value > STEERING_RIGHT_MAX_US) return STEERING_RIGHT_MAX_US;
-    return value;
-}
-
-static u8 outputs_must_be_centered(const app_context_t *ctx)
+static u8 outputs_must_be_safe(const app_context_t *ctx)
 {
     if (ctx->kill_switch != APP_FALSE) return APP_TRUE;
     if (ctx->app_state == APP_STATE_FINISHED) return APP_TRUE;
@@ -34,15 +20,12 @@ static u8 outputs_must_be_centered(const app_context_t *ctx)
     return (app_safety_outputs_allowed(ctx) == APP_FALSE);
 }
 
-static u8 suction_must_be_off(const app_context_t *ctx)
+static void fan_off(app_context_t *ctx)
 {
-    if (ctx->kill_switch != APP_FALSE) return APP_TRUE;
-    if (ctx->app_state == APP_STATE_FINISHED) return APP_TRUE;
-    if (ctx->app_state == APP_STATE_GROUND_FAULT) return APP_TRUE;
-    if (ctx->app_state == APP_STATE_SUCTION_LOCKOUT) return APP_TRUE;
-    if (ctx->app_state == APP_STATE_HARD_FAULT) return APP_TRUE;
-    if (ctx->app_state == APP_STATE_WALL_FAILSAFE_HOLD) return APP_FALSE;
-    return (app_safety_outputs_allowed(ctx) == APP_FALSE);
+    ctx->fan_cmd.state = FAN_ESC_OFF;
+    ctx->fan_cmd.request_us = FAN_ESC_MIN_US;
+    ctx->fan_cmd.output_us = 0u;
+    ctx->fan_cmd.physical_enabled = APP_FALSE;
 }
 
 void app_output_arbitrate(app_context_t *ctx)
@@ -56,19 +39,18 @@ void app_output_arbitrate(app_context_t *ctx)
         ctx->app_state = APP_STATE_HARD_FAULT;
     }
 
-    if (outputs_must_be_centered(ctx) != APP_FALSE) {
+    if (outputs_must_be_safe(ctx) != APP_FALSE) {
         ctx->drive_command_native = DRIVE_SAFE_ZERO;
         ctx->left_drive_command_native = DRIVE_SAFE_ZERO;
         ctx->right_drive_command_native = DRIVE_SAFE_ZERO;
-        ctx->steering_offset_us = 0;
-        ctx->steering_left_pulse_us = STEERING_LEFT_CENTER_US;
-        ctx->steering_right_pulse_us = STEERING_RIGHT_CENTER_US;
-        ctx->steering_pulse_us = (u16)(((u32)ctx->steering_left_pulse_us +
-                                        (u32)ctx->steering_right_pulse_us) / 2ul);
-        if (suction_must_be_off(ctx) != APP_FALSE) {
-            ctx->suction_cmd.mode = SUCTION_OFF;
-            ctx->suction_cmd.command_native = SUCTION_SAFE_OFF_NATIVE;
-            ctx->suction_cmd.armed = APP_FALSE;
+        ctx->turn_delta_mm_s = 0;
+        if (ctx->app_state == APP_STATE_WALL_FAILSAFE_HOLD) {
+            ctx->fan_cmd.state = FAN_ESC_FAILSAFE_HOLD;
+            ctx->fan_cmd.request_us = FAN_HOLD_US;
+            ctx->fan_cmd.output_us = 0u;
+            ctx->fan_cmd.physical_enabled = APP_FALSE;
+        } else {
+            fan_off(ctx);
         }
         return;
     }
@@ -77,8 +59,4 @@ void app_output_arbitrate(app_context_t *ctx)
     ctx->right_drive_command_native = clamp_drive(ctx->right_drive_command_native);
     ctx->drive_command_native = (s16)(((s32)ctx->left_drive_command_native +
                                        (s32)ctx->right_drive_command_native) / 2l);
-    ctx->steering_left_pulse_us = clamp_steering_left(ctx->steering_left_pulse_us);
-    ctx->steering_right_pulse_us = clamp_steering_right(ctx->steering_right_pulse_us);
-    ctx->steering_pulse_us = (u16)(((u32)ctx->steering_left_pulse_us +
-                                    (u32)ctx->steering_right_pulse_us) / 2ul);
 }

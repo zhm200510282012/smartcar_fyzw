@@ -396,14 +396,9 @@
               <FilePath>..\BSP\bsp_drive.c</FilePath>
             </File>
             <File>
-              <FileName>bsp_steering.c</FileName>
+              <FileName>bsp_fan_esc.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\BSP\bsp_steering.c</FilePath>
-            </File>
-            <File>
-              <FileName>bsp_suction.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\BSP\bsp_suction.c</FilePath>
+              <FilePath>..\BSP\bsp_fan_esc.c</FilePath>
             </File>
             <File>
               <FileName>bsp_encoder.c</FileName>
@@ -440,6 +435,11 @@
               <FileType>5</FileType>
               <FilePath>..\BSP\board_map.h</FilePath>
             </File>
+            <File>
+              <FileName>board_emag_map.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\BSP\board_emag_map.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -461,9 +461,9 @@
               <FilePath>..\Control\ctrl_fuzzy_pid.c</FilePath>
             </File>
             <File>
-              <FileName>ctrl_fuzzy_steering.c</FileName>
+              <FileName>ctrl_fuzzy_turn.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Control\ctrl_fuzzy_steering.c</FilePath>
+              <FilePath>..\Control\ctrl_fuzzy_turn.c</FilePath>
             </File>
             <File>
               <FileName>ctrl_attitude.c</FileName>
@@ -476,14 +476,9 @@
               <FilePath>..\Control\ctrl_speed.c</FilePath>
             </File>
             <File>
-              <FileName>ctrl_steering.c</FileName>
+              <FileName>ctrl_differential_drive.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Control\ctrl_steering.c</FilePath>
-            </File>
-            <File>
-              <FileName>ctrl_vehicle.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Control\ctrl_vehicle.c</FilePath>
+              <FilePath>..\Control\ctrl_differential_drive.c</FilePath>
             </File>
             <File>
               <FileName>ctrl_adhesion.c</FileName>
@@ -516,6 +511,11 @@
               <FilePath>..\Track\track_route_profile.c</FilePath>
             </File>
             <File>
+              <FileName>track_route_event.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Track\track_route_event.c</FilePath>
+            </File>
+            <File>
               <FileName>track_surface_state.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Track\track_surface_state.c</FilePath>
@@ -529,6 +529,11 @@
               <FileName>track_strategy.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Track\track_strategy.c</FilePath>
+            </File>
+            <File>
+              <FileName>track_wall_logic.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Track\track_wall_logic.c</FilePath>
             </File>
           </Files>
         </Group>

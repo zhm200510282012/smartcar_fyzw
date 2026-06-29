@@ -71,6 +71,7 @@ void app_state_machine_init(app_context_t *ctx)
     ctx->fuzzy_kp = FUZZY_STRAIGHT_BASE_KP;
     ctx->fuzzy_ki = FUZZY_STRAIGHT_BASE_KI;
     ctx->fuzzy_kd = FUZZY_STRAIGHT_BASE_KD;
+    ctx->turn_delta_mm_s = 0;
     ctx->steering_offset_us = 0;
     ctx->steering_left_pulse_us = STEERING_LEFT_CENTER_US;
     ctx->steering_right_pulse_us = STEERING_RIGHT_CENTER_US;
@@ -82,6 +83,12 @@ void app_state_machine_init(app_context_t *ctx)
     ctx->suction_cmd.hw_verified = SUCTION_HW_VERIFIED;
     ctx->suction_cmd.feedback_valid = APP_FALSE;
     ctx->suction_cmd.fault_code = FAULT_NONE;
+    ctx->fan_cmd.state = FAN_ESC_OFF;
+    ctx->fan_cmd.request_us = FAN_ESC_MIN_US;
+    ctx->fan_cmd.output_us = 0u;
+    ctx->fan_cmd.mapped = APP_FALSE;
+    ctx->fan_cmd.physical_enabled = APP_FALSE;
+    ctx->wall_state = TRACK_WALL_GROUND_TRACK;
     ctx->emag.channel_count = 0u;
     ctx->emag.line_quality = 0u;
     ctx->emag.signal_quality = 0u;
@@ -89,6 +96,7 @@ void app_state_machine_init(app_context_t *ctx)
     ctx->emag.valid = APP_FALSE;
     ctx->attitude.fresh = APP_FALSE;
     ctx->attitude.id_ok = APP_FALSE;
+    ctx->attitude.pitch_rate_cdeg_s = 0;
     ctx->encoder.valid = APP_FALSE;
     ctx->health.emag_ok = APP_FALSE;
     ctx->health.imu_fresh = APP_FALSE;

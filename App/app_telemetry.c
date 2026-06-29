@@ -51,8 +51,8 @@ telemetry_frame_t app_telemetry_make_frame(const app_context_t *ctx, u32 now_ms)
     t.right_speed_target_mm_s = ctx->right_speed_target_mm_s;
     t.left_speed_measured_mm_s = ctx->encoder.left_speed_mm_s;
     t.right_speed_measured_mm_s = ctx->encoder.right_speed_mm_s;
-    t.suction_mode = ctx->suction_cmd.mode;
-    t.suction_request_native = ctx->suction_cmd.command_native;
+    t.suction_mode = (suction_mode_t)ctx->fan_cmd.state;
+    t.suction_request_native = (ctx->fan_cmd.state == FAN_ESC_OFF) ? 0u : ctx->fan_cmd.request_us;
     t.adhesion_risk = ctx->adhesion_risk;
     return t;
 }

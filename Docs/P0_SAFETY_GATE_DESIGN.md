@@ -1,53 +1,41 @@
-# P0 Safety Gate Design
+# P0 安全门设计
 
-## Root Defect
+P0 安全门的目标是保证未验证的风机和上墙路径不会在 C251 实车中产生危险输出。
 
-The previous Host-SIL state machine allowed `S10_suction_unverified` to enter:
+## 编译期分离
 
-`BOOT > SELF_CHECK > SENSOR_CALIBRATION > SAFE_GROUND_READY > ARMED_GROUND > PRECHARGE > APPROACH_TRANSITION > TRANSITION_UP > WALL_TRACK`
+`App/app_build_profile.h` 将 Host-SIL 逻辑覆盖与真实硬件能力分离：
 
-This happened while `SUCTION_HW_VERIFIED=0`. The state machine also started command precharge from `transition_up_observed()`, which means precharge began after upward posture or wall surface had already been observed.
+| 构建 | `APP_WALL_STATE_CAPABLE` | 风机物理输出 |
+| --- | ---: | --- |
+| C251 `AI8051U_FYZW_SAFE` | `WALL_RUN_ENABLE`，当前 0 | `FAN_ESC_PHYSICAL_OUTPUT_ENABLE`，当前 0 |
+| Host-SIL Guard Profile | 0 | 0 |
+| Host-SIL Logical Wall Profile | 1 | 0 |
 
-## Safety Gate
+非 Host-SIL 构建中，如果 `WALL_RUN_ENABLE=1` 但 `FAN_ESC_PHYSICAL_OUTPUT_ENABLE=0`，编译期直接报错。
 
-`App/app_build_profile.h` separates physical suction capability from Host-SIL logical capability:
+## Lockout
 
-- C251 firmware: `APP_WALL_STATE_CAPABLE == SUCTION_HW_VERIFIED`
-- Host-SIL Guard Profile: `APP_WALL_STATE_CAPABLE == 0`
-- Host-SIL Logical Wall Profile: `APP_WALL_STATE_CAPABLE == 1`, while `SUCTION_HW_VERIFIED` remains `0`
+当上墙请求存在但墙运行未授权时，系统进入 `APP_STATE_SUCTION_LOCKOUT`。该状态是安全拒绝，不是墙面故障保持。
 
-Compile-time guards reject:
+最终仲裁强制：
 
-- Host-SIL logical wall macros in non-Host-SIL builds.
-- Host-SIL builds without an explicit profile.
-- Logical suction availability outside the explicit Host-SIL Logical Wall Profile.
-- C251 wall capability that differs from `SUCTION_HW_VERIFIED`.
+```text
+left_target_speed_mm_s = 0
+right_target_speed_mm_s = 0
+left_drive_command_native = 0
+right_drive_command_native = 0
+fan_cmd.state = FAN_ESC_OFF
+fan_cmd.output_us = 0
+```
 
-## Lockout State
+## 墙面故障保持
 
-`APP_STATE_SUCTION_LOCKOUT` is entered when:
+`WALL_FAILSAFE_HOLD` 只在 Host-SIL 或未来授权墙面路径中表达逻辑风机保持请求。当前 `FAN_ESC_PHYSICAL_OUTPUT_ENABLE=0`，所以真实 P2.2 输出仍为 0。
 
-`manual_suction_authorize && sensors_ready && transition_candidate_detected && APP_WALL_STATE_CAPABLE == 0`
+## 必须继续成立
 
-Final safety arbitration forces:
-
-- `drive_command_native = 0`
-- `steering_offset_us = 0`
-- `steering_pulse_us = STEERING_SAFE_CENTER_US`
-- `suction_cmd.mode = SUCTION_OFF`
-- `suction_cmd.command_native = 0`
-- hardware suction output remains `0`
-
-This is an expected safety refusal state, not a post-fault wall hold.
-
-## Candidate Versus Observed Transition
-
-`transition_candidate_detected` means a pre-wall candidate event exists before the upward pitch/surface change. In production C251 firmware it defaults to false because no hardware-verified candidate source exists.
-
-`transition_up_observed` means the vehicle is already observing transition-up or wall surface state.
-
-The corrected sequence is:
-
-`ARMED_GROUND -> transition_candidate_detected -> SUCTION_PRECHARGE -> dwell -> APPROACH_TRANSITION -> transition_up_observed -> TRANSITION_UP -> wall_observed -> WALL_TRACK`
-
-Host-SIL may inject `transition_candidate` from CSV. It must not use `SURFACE_WALL` as the precharge trigger.
+- 未 Arm、完成、地面故障、硬故障、Kill：左右电机为 0，风机真实输出为 0。
+- 线丢失后先低速搜索，超时后停车。
+- Host-SIL 可注入 `wall_approach_event`，但 C251 不能伪造上墙前置事件。
+- Keil 通过和 Host-SIL 通过都不是实车上墙许可。

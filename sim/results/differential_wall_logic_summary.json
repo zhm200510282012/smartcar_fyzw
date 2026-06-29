@@ -1,0 +1,153 @@
+{
+  "scenario_count": 20,
+  "passed": 20,
+  "failed": 0,
+  "scenarios": {
+    "D01": {
+      "pass": true,
+      "metric_a": -2000,
+      "metric_b": 900,
+      "metric_c": 0,
+      "notes": "A channel maps to negative error"
+    },
+    "D02": {
+      "pass": true,
+      "metric_a": 0,
+      "metric_b": 900,
+      "metric_c": 0,
+      "notes": "C channel maps to zero error"
+    },
+    "D03": {
+      "pass": true,
+      "metric_a": 2000,
+      "metric_b": 900,
+      "metric_c": 0,
+      "notes": "E channel maps to positive error"
+    },
+    "D04": {
+      "pass": true,
+      "metric_a": 0,
+      "metric_b": 0,
+      "metric_c": 0,
+      "notes": "line lost disables differential target"
+    },
+    "D05": {
+      "pass": true,
+      "metric_a": 200,
+      "metric_b": 120,
+      "metric_c": 1,
+      "notes": "positive turn delta changes wheel targets by sign"
+    },
+    "D06": {
+      "pass": true,
+      "metric_a": 120,
+      "metric_b": 200,
+      "metric_c": 1,
+      "notes": "negative turn delta reverses wheel target direction"
+    },
+    "D07": {
+      "pass": true,
+      "metric_a": 12,
+      "metric_b": 0,
+      "metric_c": 6,
+      "notes": "left wheel speed error only changes left native output"
+    },
+    "D08": {
+      "pass": true,
+      "metric_a": 0,
+      "metric_b": 0,
+      "metric_c": 0,
+      "notes": "encoder invalid zeros native outputs"
+    },
+    "D09": {
+      "pass": true,
+      "metric_a": 0,
+      "metric_b": 177,
+      "metric_c": 177,
+      "notes": "scheduler main path does not call steering BSP"
+    },
+    "W01": {
+      "pass": true,
+      "metric_a": 2,
+      "metric_b": 2,
+      "metric_c": 0,
+      "notes": "wall approach enters fan precharge"
+    },
+    "W02": {
+      "pass": true,
+      "metric_a": 2,
+      "metric_b": 0,
+      "metric_c": 2,
+      "notes": "transition is blocked until precharge time ends"
+    },
+    "W03": {
+      "pass": true,
+      "metric_a": 3,
+      "metric_b": 20,
+      "metric_c": 3,
+      "notes": "precharge dwell then transition-up confirm"
+    },
+    "W04": {
+      "pass": true,
+      "metric_a": 4,
+      "metric_b": 78,
+      "metric_c": 3,
+      "notes": "wall confirmed and fan hold maintained"
+    },
+    "W05": {
+      "pass": true,
+      "metric_a": 1,
+      "metric_b": 3,
+      "metric_c": 1450,
+      "notes": "risk boost is short and returns hold"
+    },
+    "W06": {
+      "pass": true,
+      "metric_a": 3,
+      "metric_b": 1450,
+      "metric_c": 0,
+      "notes": "transition down keeps fan hold"
+    },
+    "W07": {
+      "pass": true,
+      "metric_a": 5,
+      "metric_b": 1430,
+      "metric_c": 0,
+      "notes": "ground recovery confirms before ramp down"
+    },
+    "W08": {
+      "pass": true,
+      "metric_a": 8,
+      "metric_b": 6,
+      "metric_c": 0,
+      "notes": "IMU stale on wall enters failsafe hold"
+    },
+    "W09": {
+      "pass": true,
+      "metric_a": 8,
+      "metric_b": 0,
+      "metric_c": 6,
+      "notes": "transition down does not rebound to up"
+    },
+    "W10": {
+      "pass": true,
+      "metric_a": 1600,
+      "metric_b": 0,
+      "metric_c": 0,
+      "notes": "physical fan output remains zero while logical request changes"
+    },
+    "W11": {
+      "pass": true,
+      "metric_a": 0,
+      "metric_b": 0,
+      "metric_c": 0,
+      "notes": "finished state zeros drive and real fan output"
+    }
+  },
+  "safety": {
+    "fan_esc_physical_output_enable": 0,
+    "hardware_fan_output_max": 0,
+    "real_bench_pass": false,
+    "real_wall_pass": false
+  }
+}

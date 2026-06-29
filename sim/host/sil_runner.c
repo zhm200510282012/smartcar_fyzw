@@ -9,12 +9,13 @@
 #include "../../BSP/bsp_drive.h"
 #include "../../BSP/bsp_emag.h"
 #include "../../BSP/bsp_encoder.h"
+#include "../../BSP/bsp_fan_esc.h"
 #include "../../BSP/bsp_imu.h"
 #include "../../BSP/bsp_power.h"
-#include "../../BSP/bsp_steering.h"
 #include "../../BSP/bsp_suction.h"
 #include "../../BSP/bsp_timebase.h"
 #include "../../BSP/bsp_ui.h"
+#include "../../Track/track_route_event.h"
 
 static void init_system(app_context_t *ctx)
 {
@@ -26,8 +27,7 @@ static void init_system(app_context_t *ctx)
     bsp_power_init();
     bsp_ui_init();
     bsp_drive_init();
-    bsp_steering_init();
-    bsp_suction_init();
+    bsp_fan_esc_init();
     app_state_machine_init(ctx);
     app_scheduler_init();
 }
@@ -103,6 +103,10 @@ static int parse_input_line(const char *line, host_sil_input_t *input)
     input->manual_arm = manual_arm ? APP_TRUE : APP_FALSE;
     input->suction_authorize = suction_authorize ? APP_TRUE : APP_FALSE;
     input->transition_candidate = transition_candidate ? APP_TRUE : APP_FALSE;
+    input->route_event = track_route_event_none();
+    if (transition_candidate) {
+        input->route_event.wall_approach_event = APP_TRUE;
+    }
     input->emag_valid = emag_valid ? APP_TRUE : APP_FALSE;
     input->line_error = (s16)line_error;
     input->signal_quality = (u16)signal_quality;
@@ -124,6 +128,7 @@ static int parse_input_line(const char *line, host_sil_input_t *input)
     input->imu_fresh = imu_fresh ? APP_TRUE : APP_FALSE;
     input->imu_id_ok = imu_id_ok ? APP_TRUE : APP_FALSE;
     input->pitch_cdeg = (s16)pitch_cdeg;
+    input->pitch_rate_cdeg_s = 0;
     input->encoder_valid = encoder_valid ? APP_TRUE : APP_FALSE;
     input->left_count = (s32)left_count;
     input->right_count = (s32)right_count;
@@ -152,10 +157,10 @@ static void write_output_header(FILE *out)
 static void write_output_line(FILE *out, const app_context_t *ctx, u32 now_ms)
 {
     telemetry_frame_t frame;
-    suction_command_t suction;
+    fan_esc_command_t fan;
 
     frame = app_telemetry_make_frame(ctx, now_ms);
-    suction = bsp_suction_last_command();
+    fan = bsp_fan_esc_last_command();
     fprintf(out,
             "%lu,%u,%u,%u,%d,%d,%d,%d,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
             (unsigned long)frame.timestamp_ms,
@@ -167,11 +172,11 @@ static void write_output_line(FILE *out, const app_context_t *ctx, u32 now_ms)
             (int)ctx->right_drive_command_native,
             (int)frame.steering_offset_us,
             (unsigned int)frame.steering_pulse_us,
-            (unsigned int)suction.mode,
+            (unsigned int)fan.state,
             (unsigned int)ctx->steering_left_pulse_us,
             (unsigned int)ctx->steering_right_pulse_us,
             (unsigned int)frame.suction_request_native,
-            (unsigned int)bsp_suction_last_native_output(),
+            (unsigned int)bsp_fan_esc_last_output_us(),
             (unsigned int)frame.adhesion_risk,
             (unsigned int)ctx->state_elapsed_ms,
             (unsigned int)ctx->transition_candidate,

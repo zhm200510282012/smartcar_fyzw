@@ -24,8 +24,8 @@
 #error "Host-SIL builds must select HOST_SIL_GUARD_PROFILE or HOST_SIL_LOGICAL_WALL_PROFILE explicitly"
 #endif
 #if defined(HOST_SIL_LOGICAL_WALL_PROFILE)
-#if SUCTION_HW_VERIFIED != 0
-#error "Host-SIL logical wall profile must not fake SUCTION_HW_VERIFIED"
+#if FAN_ESC_PHYSICAL_OUTPUT_ENABLE != 0
+#error "Host-SIL logical wall profile must not enable physical fan output"
 #endif
 #define HOST_SIL_LOGICAL_SUCTION_AVAILABLE 1
 #define APP_WALL_STATE_CAPABLE 1
@@ -35,12 +35,9 @@
 #endif
 #else
 #define HOST_SIL_LOGICAL_SUCTION_AVAILABLE 0
-#define APP_WALL_STATE_CAPABLE SUCTION_HW_VERIFIED
-#if APP_WALL_STATE_CAPABLE != SUCTION_HW_VERIFIED
-#error "C251 APP_WALL_STATE_CAPABLE must equal SUCTION_HW_VERIFIED"
-#endif
-#if APP_WALL_STATE_CAPABLE && (SUCTION_HW_VERIFIED == 0)
-#error "C251 cannot enable wall states without verified suction hardware"
+#define APP_WALL_STATE_CAPABLE WALL_RUN_ENABLE
+#if APP_WALL_STATE_CAPABLE && (FAN_ESC_PHYSICAL_OUTPUT_ENABLE == 0)
+#error "C251 cannot enable wall states while FAN_ESC_PHYSICAL_OUTPUT_ENABLE is 0"
 #endif
 #endif
 

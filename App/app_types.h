@@ -12,6 +12,15 @@ typedef signed long s32;
 
 #define APP_TRUE 1u
 #define APP_FALSE 0u
+#define EMAG_CHANNEL_COUNT 5u
+
+typedef enum {
+    EMAG_A_LEFT = 0,
+    EMAG_B_LEFT_MID,
+    EMAG_C_CENTER,
+    EMAG_D_RIGHT_MID,
+    EMAG_E_RIGHT
+} emag_channel_t;
 
 typedef enum {
     SURFACE_UNKNOWN = 0,
@@ -72,6 +81,28 @@ typedef enum {
 } suction_mode_t;
 
 typedef enum {
+    FAN_ESC_OFF = 0,
+    FAN_ESC_ARMING,
+    FAN_ESC_PRECHARGE,
+    FAN_ESC_HOLD,
+    FAN_ESC_BOOST,
+    FAN_ESC_RAMP_DOWN,
+    FAN_ESC_FAILSAFE_HOLD
+} fan_esc_state_t;
+
+typedef enum {
+    TRACK_WALL_GROUND_TRACK = 0,
+    TRACK_WALL_WALL_APPROACH,
+    TRACK_WALL_FAN_PRECHARGE,
+    TRACK_WALL_TRANSITION_UP,
+    TRACK_WALL_WALL_TRACK,
+    TRACK_WALL_CYLINDER_TRACK,
+    TRACK_WALL_TRANSITION_DOWN,
+    TRACK_WALL_GROUND_RECOVERY,
+    TRACK_WALL_FAILSAFE_HOLD
+} track_wall_state_t;
+
+typedef enum {
     FAULT_NONE = 0,
     FAULT_SENSOR_STALE = 1u,
     FAULT_LINE_LOST = 2u,
@@ -95,9 +126,17 @@ typedef struct {
 } suction_command_t;
 
 typedef struct {
-    u16 raw[5];
-    u16 filtered[5];
-    u16 norm[5];
+    fan_esc_state_t state;
+    u16 request_us;
+    u16 output_us;
+    u8 mapped;
+    u8 physical_enabled;
+} fan_esc_command_t;
+
+typedef struct {
+    u16 raw[EMAG_CHANNEL_COUNT];
+    u16 filtered[EMAG_CHANNEL_COUNT];
+    u16 norm[EMAG_CHANNEL_COUNT];
     s16 line_error;
     u16 line_quality;
     u16 signal_quality;
@@ -109,6 +148,7 @@ typedef struct {
 typedef struct {
     s16 roll_cdeg;
     s16 pitch_cdeg;
+    s16 pitch_rate_cdeg_s;
     s16 yaw_rate_cdeg_s;
     u32 timestamp_ms;
     u8 id_ok;
@@ -156,11 +196,14 @@ typedef struct {
     s16 fuzzy_kp;
     s16 fuzzy_ki;
     s16 fuzzy_kd;
+    s16 turn_delta_mm_s;
     s16 steering_offset_us;
     u16 steering_pulse_us;
     u16 steering_left_pulse_us;
     u16 steering_right_pulse_us;
     suction_command_t suction_cmd;
+    fan_esc_command_t fan_cmd;
+    track_wall_state_t wall_state;
     emag_sample_t emag;
     attitude_sample_t attitude;
     encoder_sample_t encoder;

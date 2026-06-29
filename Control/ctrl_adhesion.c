@@ -1,72 +1,127 @@
 #include "ctrl_adhesion.h"
-#include "../App/app_build_profile.h"
 #include "../App/app_config.h"
+#include "../BSP/board_map.h"
 
-static u16 logical_suction_request(u16 real_native, u16 host_logical)
+static fan_esc_command_t make_command(fan_esc_state_t state, u16 request_us)
 {
-    if (HOST_SIL_LOGICAL_SUCTION_AVAILABLE != 0) {
-        return host_logical;
-    }
-    return real_native;
+    fan_esc_command_t cmd;
+    cmd.state = state;
+    cmd.request_us = request_us;
+    cmd.output_us = (FAN_ESC_PHYSICAL_OUTPUT_ENABLE != 0 && BOARD_FAN_PWM_MAPPED != 0) ? request_us : 0u;
+    cmd.mapped = BOARD_FAN_PWM_MAPPED;
+    cmd.physical_enabled = FAN_ESC_PHYSICAL_OUTPUT_ENABLE;
+    return cmd;
 }
 
-static u16 base_by_surface(surface_state_t surface)
+void ctrl_adhesion_init(ctrl_adhesion_state_t *state)
 {
-    if (surface == SURFACE_WALL) return logical_suction_request(SUCTION_HOLD_NATIVE, APP_LOGICAL_SUCTION_HOLD_REQUEST);
-    if (surface == SURFACE_TRANSITION_UP || surface == SURFACE_TRANSITION_DOWN) {
-        return logical_suction_request(SUCTION_PRECHARGE_NATIVE, APP_LOGICAL_SUCTION_PRECHARGE_REQUEST);
-    }
-    return logical_suction_request(SUCTION_IDLE_NATIVE, SUCTION_IDLE_NATIVE);
-}
-
-static u16 estimate_adhesion_risk(const app_context_t *ctx)
-{
-    u16 risk = 0u;
-    if (ctx->surface_state == SURFACE_UNKNOWN) risk = (u16)(risk + 300u);
-    if (ctx->health.imu_fresh == APP_FALSE) risk = (u16)(risk + 250u);
-    if (ctx->emag.signal_quality < LINE_QUALITY_MIN) risk = (u16)(risk + 250u);
-    if (ctx->health.encoder_ok == APP_FALSE) risk = (u16)(risk + 100u);
-    if (ctx->health.power_ok == APP_FALSE) risk = (u16)(risk + 100u);
-    if (risk > 1000u) risk = 1000u;
-    return risk;
-}
-
-void ctrl_adhesion_update(app_context_t *ctx)
-{
-    u16 request;
-    if (ctx == 0) {
+    if (state == 0) {
         return;
     }
+    state->state = (FAN_ESC_PHYSICAL_OUTPUT_ENABLE != 0) ? FAN_ESC_ARMING : FAN_ESC_OFF;
+    state->state_elapsed_ms = 0u;
+    state->boost_elapsed_ms = 0u;
+    state->ground_confirm_ms = 0u;
+    state->ramp_elapsed_ms = 0u;
+    state->request_us = FAN_ESC_MIN_US;
+}
 
-    ctx->adhesion_risk = estimate_adhesion_risk(ctx);
-    request = base_by_surface(ctx->surface_state);
+void ctrl_adhesion_reset(ctrl_adhesion_state_t *state)
+{
+    ctrl_adhesion_init(state);
+}
 
-    if (ctx->app_state == APP_STATE_SUCTION_PRECHARGE ||
-        ctx->app_state == APP_STATE_APPROACH_TRANSITION) {
-        ctx->suction_cmd.mode = SUCTION_PRECHARGE;
-        request = logical_suction_request(SUCTION_PRECHARGE_NATIVE, APP_LOGICAL_SUCTION_PRECHARGE_REQUEST);
-    } else if (ctx->app_state == APP_STATE_WALL_TRACK) {
-        ctx->suction_cmd.mode = SUCTION_HOLD;
-        request = logical_suction_request(SUCTION_HOLD_NATIVE, APP_LOGICAL_SUCTION_HOLD_REQUEST);
-    } else if (ctx->adhesion_risk > ADHESION_RISK_LIMIT) {
-        ctx->suction_cmd.mode = SUCTION_BOOST;
-        request = logical_suction_request(SUCTION_BOOST_NATIVE, APP_LOGICAL_SUCTION_BOOST_REQUEST);
-    } else {
-        ctx->suction_cmd.mode = SUCTION_IDLE;
+static void enter_state(ctrl_adhesion_state_t *state, fan_esc_state_t next, u16 request_us)
+{
+    if (state->state != next) {
+        state->state = next;
+        state->state_elapsed_ms = 0u;
+        state->boost_elapsed_ms = 0u;
+        state->ramp_elapsed_ms = 0u;
+    }
+    state->request_us = request_us;
+}
+
+fan_esc_command_t ctrl_adhesion_update(ctrl_adhesion_state_t *state,
+                                       track_wall_state_t wall_state,
+                                       u16 adhesion_risk,
+                                       u16 dt_ms)
+{
+    if (state == 0) {
+        return make_command(FAN_ESC_OFF, FAN_ESC_MIN_US);
     }
 
-    if (ctx->app_state == APP_STATE_WALL_FAILSAFE_HOLD) {
-        ctx->suction_cmd.mode = SUCTION_EMERGENCY_HOLD;
-        request = logical_suction_request(SUCTION_EMERGENCY_HOLD_NATIVE, APP_LOGICAL_SUCTION_EMERGENCY_REQUEST);
+    state->state_elapsed_ms = (u16)(state->state_elapsed_ms + dt_ms);
+
+    if (FAN_ESC_PHYSICAL_OUTPUT_ENABLE != 0 &&
+        state->state == FAN_ESC_ARMING) {
+        state->request_us = FAN_ESC_MIN_US;
+        if (state->state_elapsed_ms < FAN_ESC_ARM_TIME_MS) {
+            return make_command(FAN_ESC_ARMING, FAN_ESC_MIN_US);
+        }
+        enter_state(state, FAN_ESC_OFF, FAN_ESC_MIN_US);
     }
 
-    if (ctx->app_state == APP_STATE_SUCTION_LOCKOUT) {
-        ctx->suction_cmd.mode = SUCTION_OFF;
-        request = SUCTION_SAFE_OFF_NATIVE;
+    if (wall_state == TRACK_WALL_FAILSAFE_HOLD) {
+        enter_state(state, FAN_ESC_FAILSAFE_HOLD, FAN_HOLD_US);
+        return make_command(state->state, state->request_us);
     }
 
-    ctx->suction_cmd.command_native = request;
-    ctx->suction_cmd.armed = ctx->manual_suction_authorize;
-    ctx->suction_cmd.hw_verified = SUCTION_HW_VERIFIED;
-    ctx->suction_cmd.feedback_valid = SUCTION_FEEDBACK_AVAILABLE;
+    if (wall_state == TRACK_WALL_GROUND_TRACK ||
+        wall_state == TRACK_WALL_WALL_APPROACH) {
+        state->ground_confirm_ms = 0u;
+        enter_state(state, FAN_ESC_OFF, FAN_ESC_MIN_US);
+        return make_command(state->state, state->request_us);
+    }
+
+    if (wall_state == TRACK_WALL_FAN_PRECHARGE) {
+        state->ground_confirm_ms = 0u;
+        enter_state(state, FAN_ESC_PRECHARGE, FAN_PRECHARGE_US);
+        return make_command(state->state, state->request_us);
+    }
+
+    if (wall_state == TRACK_WALL_TRANSITION_UP ||
+        wall_state == TRACK_WALL_WALL_TRACK ||
+        wall_state == TRACK_WALL_CYLINDER_TRACK ||
+        wall_state == TRACK_WALL_TRANSITION_DOWN) {
+        state->ground_confirm_ms = 0u;
+        if (adhesion_risk > ADHESION_RISK_LIMIT &&
+            wall_state != TRACK_WALL_TRANSITION_DOWN &&
+            state->state != FAN_ESC_BOOST) {
+            enter_state(state, FAN_ESC_BOOST, FAN_BOOST_US);
+        } else if (state->state == FAN_ESC_BOOST) {
+            state->boost_elapsed_ms = (u16)(state->boost_elapsed_ms + dt_ms);
+            if (state->boost_elapsed_ms >= FAN_BOOST_TIME_MS) {
+                enter_state(state, FAN_ESC_HOLD, FAN_HOLD_US);
+            }
+        } else {
+            enter_state(state, FAN_ESC_HOLD, FAN_HOLD_US);
+        }
+        return make_command(state->state, state->request_us);
+    }
+
+    if (wall_state == TRACK_WALL_GROUND_RECOVERY) {
+        state->ground_confirm_ms = (u16)(state->ground_confirm_ms + dt_ms);
+        if (state->ground_confirm_ms < IMU_GROUND_CONFIRM_MS) {
+            enter_state(state, FAN_ESC_HOLD, FAN_HOLD_US);
+            return make_command(state->state, state->request_us);
+        }
+
+        if (state->state != FAN_ESC_RAMP_DOWN) {
+            enter_state(state, FAN_ESC_RAMP_DOWN, FAN_HOLD_US);
+        }
+        state->ramp_elapsed_ms = (u16)(state->ramp_elapsed_ms + dt_ms);
+        if (state->ramp_elapsed_ms >= FAN_RAMP_DOWN_PERIOD_MS) {
+            state->ramp_elapsed_ms = 0u;
+            if (state->request_us > (u16)(FAN_ESC_MIN_US + FAN_RAMP_DOWN_STEP_US)) {
+                state->request_us = (u16)(state->request_us - FAN_RAMP_DOWN_STEP_US);
+            } else {
+                enter_state(state, FAN_ESC_OFF, FAN_ESC_MIN_US);
+            }
+        }
+        return make_command(state->state, state->request_us);
+    }
+
+    enter_state(state, FAN_ESC_OFF, FAN_ESC_MIN_US);
+    return make_command(state->state, state->request_us);
 }

@@ -1,37 +1,23 @@
-# Fuzzy PID Tuning Guide
+# 模糊 PID 差速调试指南
 
-This is a competition tuning order, not a wall-test permission. Real suction and wall driving remain locked until hardware gates pass.
+当前模糊 PID 不再输出舵机脉宽。它只根据五路电磁误差输出 `turn_delta_mm_s`，再由差速混控生成左右目标轮速。
 
-## Tuning Order
+## 调试顺序
 
-1. Disable fuzzy adjustment conceptually by setting adjustment limits to zero; tune base ground PD only.
-2. Tune straight ground `Kp` until line tracking is responsive without oscillation.
-3. Tune normal-curve `Kd` for damping and exit stability.
-4. Tune sharp curve / omega speed limit, steering offset limit, and steering rate limit.
-5. Enable only `Delta Kp` and `Delta Kd`; keep `Ki` off outside stable straight.
-6. Try very small straight-only `Ki` after straight and curve PD are stable.
-7. Tune transition, wall, cylinder, and seesaw profiles separately on bench or constrained fixtures.
+1. 保持 `FUZZY_ENABLE=0`，先用基础 PD 跑低速地面循迹。
+2. 确认 `LINE_DIRECTION_SIGN` 与 `DIFF_TURN_SIGN` 后再提高速度。
+3. 基础 PD 不摆振后，将 `FUZZY_ENABLE` 改为 1。
+4. 观察 `line_error_filtered`、`line_error_rate`、`turn_delta_mm_s`、左右目标轮速和左右 native 输出。
+5. 丢线、未 Arm、完成、故障、Kill 时，`turn_delta_mm_s` 和左右输出必须归零。
 
-## Parameters To Watch
+## 关键参数
 
-UART telemetry fields added by this upgrade:
-
-| Field | Purpose |
+| 参数 | 用途 |
 | --- | --- |
-| `track_mode` | selected observable track mode |
-| `line_error` | raw line error after line update |
-| `line_error_filtered` | low-pass line error used by fuzzy steering |
-| `error_rate` | filtered error delta |
-| `fuzzy_kp` / `fuzzy_ki` / `fuzzy_kd` | active fixed-point gains |
-| `steering_offset_us` | final requested steering offset before arbitration |
-| `steering_left_us` / `steering_right_us` | dual-servo pulses after vehicle update |
-| `left_speed_target` / `right_speed_target` | mode-selected speed targets |
-| `left_speed_measured` / `right_speed_measured` | encoder feedback |
+| `GROUND_STEERING_KP` | 基础差速 P |
+| `GROUND_STEERING_KD` | 基础差速 D |
+| `FUZZY_ENABLE` | 是否启用 5x5 Sugeno 自整定 |
+| `DIFF_TURN_DELTA_LIMIT_MM_S` | 差速转向速度差限幅 |
+| `DIFF_TURN_SIGN` | 差速左右方向 |
 
-## Safety Rules During Tuning
-
-- Do not tune suction from this module.
-- Do not use fuzzy PID to choose a route at a crossing.
-- Do not enable real wall tests from Host-SIL results.
-- If line quality drops, verify steering returns to center and fuzzy integral resets.
-- If a fault or finish state is reached, verify motor command is zero and steering is centered.
+Host-SIL 通过不代表实车通过；风机和上墙仍由 `FAN_ESC_PHYSICAL_OUTPUT_ENABLE=0`、`WALL_RUN_ENABLE=0` 锁定。

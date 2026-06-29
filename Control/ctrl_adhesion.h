@@ -3,6 +3,20 @@
 
 #include "../App/app_types.h"
 
-void ctrl_adhesion_update(app_context_t *ctx);
+typedef struct {
+    fan_esc_state_t state;
+    u16 state_elapsed_ms;
+    u16 boost_elapsed_ms;
+    u16 ground_confirm_ms;
+    u16 ramp_elapsed_ms;
+    u16 request_us;
+} ctrl_adhesion_state_t;
+
+void ctrl_adhesion_init(ctrl_adhesion_state_t *state);
+void ctrl_adhesion_reset(ctrl_adhesion_state_t *state);
+fan_esc_command_t ctrl_adhesion_update(ctrl_adhesion_state_t *state,
+                                       track_wall_state_t wall_state,
+                                       u16 adhesion_risk,
+                                       u16 dt_ms);
 
 #endif

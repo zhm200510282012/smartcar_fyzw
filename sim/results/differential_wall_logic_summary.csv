@@ -1,0 +1,21 @@
+scenario,pass,metric_a,metric_b,metric_c,notes
+D01,true,-2000,900,0,A channel maps to negative error
+D02,true,0,900,0,C channel maps to zero error
+D03,true,2000,900,0,E channel maps to positive error
+D04,true,0,0,0,line lost disables differential target
+D05,true,200,120,1,positive turn delta changes wheel targets by sign
+D06,true,120,200,1,negative turn delta reverses wheel target direction
+D07,true,12,0,6,left wheel speed error only changes left native output
+D08,true,0,0,0,encoder invalid zeros native outputs
+D09,true,0,177,177,scheduler main path does not call steering BSP
+W01,true,2,2,0,wall approach enters fan precharge
+W02,true,2,0,2,transition is blocked until precharge time ends
+W03,true,3,20,3,precharge dwell then transition-up confirm
+W04,true,4,78,3,wall confirmed and fan hold maintained
+W05,true,1,3,1450,risk boost is short and returns hold
+W06,true,3,1450,0,transition down keeps fan hold
+W07,true,5,1430,0,ground recovery confirms before ramp down
+W08,true,8,6,0,IMU stale on wall enters failsafe hold
+W09,true,8,0,6,transition down does not rebound to up
+W10,true,1600,0,0,physical fan output remains zero while logical request changes
+W11,true,0,0,0,finished state zeros drive and real fan output

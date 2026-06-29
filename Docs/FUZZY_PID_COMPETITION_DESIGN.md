@@ -1,55 +1,31 @@
-# Fuzzy PID Competition Design
+# 模糊 PID 竞赛控制设计
 
-## Scope
+本工程只保留一套定点模糊 PID。当前实时路径为差速车路径：
 
-This upgrade adds a lightweight fixed-point fuzzy self-tuning PID layer for steering only.
+```text
+line_error_filtered, line_error_rate
+-> ctrl_fuzzy_pid_eval()
+-> Kp/Ki/Kd 自整定
+-> ctrl_fuzzy_turn_update()
+-> turn_delta_mm_s
+-> ctrl_differential_drive_mix()
+-> left/right target speed
+```
 
-Control chain:
+`FUZZY_ENABLE=0` 时，控制器使用基础 PD 参数；`FUZZY_ENABLE=1` 时，5x5 Sugeno 规则只调整同一套控制器的增益，不新增第二套 PID。
 
-1. five-channel electromagnetic sample
-2. `line_error`
-3. `line_error_filtered`
-4. `error_rate`
-5. observable track-mode selection
-6. fuzzy self-tuning `Kp/Ki/Kd`
-7. conventional PID steering offset
-8. dual steering servo pulse output through existing final arbitration
+## 主路径文件
 
-The speed loop remains the existing encoder-based command path. Track mode only selects target speed and steering limits.
-
-## Fixed-Point Scaling
-
-Inputs are normalized to `[-1000, +1000]`:
-
-| Signal | Macro | Meaning |
-| --- | ---: | --- |
-| `e` | `FUZZY_E_SCALE = 1000` | filtered line error normalization scale |
-| `de` | `FUZZY_DE_SCALE = 1000` | line-error-rate normalization scale |
-| membership weight | `FUZZY_WEIGHT_SCALE = 1000` | 1000 means full membership |
-| PID output divisor | `FUZZY_PID_OUTPUT_SCALE = 1000` | converts fixed-point PID sum to servo microseconds |
-
-No `float`, `double`, dynamic allocation, recursion, or large rule network is used.
-
-## Safety Integration
-
-Fuzzy steering runs before `app_output_arbitrate()`. It cannot override final safety output.
-
-Fuzzy PID state is reset when:
-
-- outputs are not allowed;
-- `TRACK_MODE_LINE_LOST` is selected;
-- line quality is below `TRACK_LINE_LOST_QUALITY_MIN`;
-- state is `FINISHED`, `GROUND_FAULT`, `SUCTION_LOCKOUT`, `WALL_FAILSAFE_HOLD`, or `HARD_FAULT`;
-- the active track mode changes.
-
-`SUCTION_HW_VERIFIED` remains `0`; real suction native output remains `0`.
-
-## Files
-
-| File | Role |
+| 文件 | 当前职责 |
 | --- | --- |
-| `Control/ctrl_fuzzy_pid.c` | membership functions, 5x5 rules, weighted average, gain limits |
-| `Control/ctrl_fuzzy_steering.c` | conventional fixed-point PID steering using fuzzy-updated gains |
-| `Track/track_route_profile.c` | generic observable track mode selector with debounce/dwell |
-| `Track/track_strategy.c` | per-mode base PID, steering limits, rate limits, speed targets |
-| `App/app_scheduler.c` | integrates line terms, mode selection, fuzzy steering, safety reset |
+| `Control/ctrl_fuzzy_pid.c` | 定点 5x5 模糊推理和增益限幅 |
+| `Control/ctrl_fuzzy_turn.c` | 将误差转换为 `turn_delta_mm_s` |
+| `Control/ctrl_differential_drive.c` | 将转向差速混控为左右目标速度 |
+| `Control/ctrl_speed.c` | 左右独立速度 PI |
+| `App/app_scheduler.c` | 串接五路电磁、差速、PI、风机和安全仲裁 |
+
+旧 `ctrl_fuzzy_steering.c`、`ctrl_steering.c`、`ctrl_vehicle.c` 仅为历史文件，不在 Keil 主目标的调度输出路径中使用。
+
+## 安全复位
+
+未 Arm、完成、故障、丢线停车、Kill、`SUCTION_LOCKOUT`、`WALL_FAILSAFE_HOLD` 时，模糊 PID 状态复位，`turn_delta_mm_s=0`，左右目标速度和左右 native 输出为 0。

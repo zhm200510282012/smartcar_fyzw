@@ -9,12 +9,15 @@
 #include "../../BSP/bsp_drive.h"
 #include "../../BSP/bsp_emag.h"
 #include "../../BSP/bsp_encoder.h"
+#include "../../BSP/bsp_fan_esc.h"
 #include "../../BSP/bsp_imu.h"
 #include "../../BSP/bsp_power.h"
 #include "../../BSP/bsp_steering.h"
 #include "../../BSP/bsp_suction.h"
 #include "../../BSP/bsp_timebase.h"
 #include "../../BSP/bsp_ui.h"
+#include "../../BSP/board_map.h"
+#include "../../Control/ctrl_differential_drive.h"
 #include "../../Control/ctrl_line.h"
 #include "../../Control/ctrl_speed.h"
 #include "../../Control/ctrl_vehicle.h"
@@ -172,24 +175,19 @@ static int s44_encoder_invalid_zero(FILE *out)
     return pass;
 }
 
-static int s45_dual_servo_sign(FILE *out)
+static int s45_differential_sign(FILE *out)
 {
-    app_context_t ctx;
+    differential_drive_output_t output;
     int expected_left;
     int expected_right;
     int pass;
 
-    app_state_machine_init(&ctx);
-    ctx.speed_limit_mm_s = 100;
-    ctx.left_drive_command_native = 0;
-    ctx.right_drive_command_native = 0;
-    ctx.steering_offset_us = 100;
-    ctrl_vehicle_update(&ctx);
-    expected_left = (int)STEERING_LEFT_CENTER_US + (STEERING_LEFT_SIGN * 100);
-    expected_right = (int)STEERING_RIGHT_CENTER_US + (STEERING_RIGHT_SIGN * 100);
-    pass = ((int)ctx.steering_left_pulse_us == expected_left &&
-            (int)ctx.steering_right_pulse_us == expected_right);
-    write_result(out, "S45", pass, pass ? "dual servo signs applied" : "dual servo sign output mismatch", ctx.steering_left_pulse_us, ctx.steering_right_pulse_us, ctx.steering_pulse_us);
+    output = ctrl_differential_drive_mix(160, 40, APP_TRUE);
+    expected_left = 160 + (DIFF_TURN_SIGN * 40);
+    expected_right = 160 - (DIFF_TURN_SIGN * 40);
+    pass = ((int)output.left_target_mm_s == expected_left &&
+            (int)output.right_target_mm_s == expected_right);
+    write_result(out, "S45", pass, pass ? "differential turn sign applied" : "differential sign output mismatch", output.left_target_mm_s, output.right_target_mm_s, DIFF_TURN_SIGN);
     return pass;
 }
 
@@ -204,15 +202,17 @@ static int s46_arbitration_preserves_independent_outputs(FILE *out)
     ctx.left_drive_command_native = 120;
     ctx.right_drive_command_native = 60;
     ctx.drive_command_native = 90;
-    ctx.steering_left_pulse_us = (u16)(STEERING_LEFT_CENTER_US + 80u);
-    ctx.steering_right_pulse_us = (u16)(STEERING_RIGHT_CENTER_US - 40u);
-    ctx.steering_pulse_us = (u16)(((u32)ctx.steering_left_pulse_us + (u32)ctx.steering_right_pulse_us) / 2ul);
+    ctx.fan_cmd.state = FAN_ESC_HOLD;
+    ctx.fan_cmd.request_us = FAN_HOLD_US;
+    ctx.fan_cmd.output_us = 0u;
+    ctx.fan_cmd.mapped = BOARD_FAN_PWM_MAPPED;
+    ctx.fan_cmd.physical_enabled = FAN_ESC_PHYSICAL_OUTPUT_ENABLE;
     app_output_arbitrate(&ctx);
     pass = (ctx.left_drive_command_native == 120 &&
             ctx.right_drive_command_native == 60 &&
-            ctx.steering_left_pulse_us == (u16)(STEERING_LEFT_CENTER_US + 80u) &&
-            ctx.steering_right_pulse_us == (u16)(STEERING_RIGHT_CENTER_US - 40u));
-    write_result(out, "S46", pass, pass ? "arbitration preserves independent outputs" : "arbitration merged outputs", ctx.left_drive_command_native, ctx.right_drive_command_native, ctx.steering_left_pulse_us);
+            ctx.fan_cmd.state == FAN_ESC_HOLD &&
+            ctx.fan_cmd.request_us == FAN_HOLD_US);
+    write_result(out, "S46", pass, pass ? "arbitration preserves independent drive and fan request" : "arbitration merged outputs", ctx.left_drive_command_native, ctx.right_drive_command_native, ctx.fan_cmd.request_us);
     return pass;
 }
 
@@ -226,33 +226,37 @@ static int s47_safe_states_center(FILE *out)
     ctx.manual_arm = APP_FALSE;
     ctx.left_drive_command_native = 100;
     ctx.right_drive_command_native = 80;
-    ctx.steering_left_pulse_us = STEERING_LEFT_MAX_US;
-    ctx.steering_right_pulse_us = STEERING_RIGHT_MIN_US;
+    ctx.fan_cmd.state = FAN_ESC_HOLD;
+    ctx.fan_cmd.request_us = FAN_HOLD_US;
     app_output_arbitrate(&ctx);
     pass = (ctx.left_drive_command_native == 0 &&
             ctx.right_drive_command_native == 0 &&
-            ctx.steering_left_pulse_us == STEERING_LEFT_CENTER_US &&
-            ctx.steering_right_pulse_us == STEERING_RIGHT_CENTER_US);
+            ctx.fan_cmd.state == FAN_ESC_OFF &&
+            ctx.fan_cmd.output_us == 0u);
 
     ctx.app_state = APP_STATE_FINISHED;
     ctx.manual_arm = APP_TRUE;
     ctx.left_drive_command_native = 100;
     ctx.right_drive_command_native = 80;
+    ctx.fan_cmd.state = FAN_ESC_HOLD;
+    ctx.fan_cmd.request_us = FAN_HOLD_US;
     app_output_arbitrate(&ctx);
     pass = pass && (ctx.left_drive_command_native == 0 &&
                     ctx.right_drive_command_native == 0 &&
-                    ctx.steering_left_pulse_us == STEERING_LEFT_CENTER_US &&
-                    ctx.steering_right_pulse_us == STEERING_RIGHT_CENTER_US);
+                    ctx.fan_cmd.state == FAN_ESC_OFF &&
+                    ctx.fan_cmd.output_us == 0u);
 
     ctx.app_state = APP_STATE_HARD_FAULT;
     ctx.left_drive_command_native = 100;
     ctx.right_drive_command_native = 80;
+    ctx.fan_cmd.state = FAN_ESC_HOLD;
+    ctx.fan_cmd.request_us = FAN_HOLD_US;
     app_output_arbitrate(&ctx);
     pass = pass && (ctx.left_drive_command_native == 0 &&
                     ctx.right_drive_command_native == 0 &&
-                    ctx.steering_left_pulse_us == STEERING_LEFT_CENTER_US &&
-                    ctx.steering_right_pulse_us == STEERING_RIGHT_CENTER_US);
-    write_result(out, "S47", pass, pass ? "safe states zero and center outputs" : "safe state left output active", ctx.left_drive_command_native, ctx.right_drive_command_native, ctx.steering_left_pulse_us);
+                    ctx.fan_cmd.state == FAN_ESC_OFF &&
+                    ctx.fan_cmd.output_us == 0u);
+    write_result(out, "S47", pass, pass ? "safe states zero drive and fan output" : "safe state left output active", ctx.left_drive_command_native, ctx.right_drive_command_native, ctx.fan_cmd.output_us);
     return pass;
 }
 
@@ -268,6 +272,7 @@ static void init_host_system(app_context_t *ctx)
     bsp_drive_init();
     bsp_steering_init();
     bsp_suction_init();
+    bsp_fan_esc_init();
     app_state_machine_init(ctx);
     app_scheduler_init();
 }
@@ -285,6 +290,7 @@ static int s48_scheduler_uses_fuzzy_path(FILE *out)
         input.manual_arm = (t >= 80ul) ? APP_TRUE : APP_FALSE;
         input.suction_authorize = APP_FALSE;
         input.transition_candidate = APP_FALSE;
+        input.route_event = track_route_event_none();
         input.emag_valid = APP_TRUE;
         input.line_error = 0;
         input.signal_quality = 760u;
@@ -297,6 +303,7 @@ static int s48_scheduler_uses_fuzzy_path(FILE *out)
         input.imu_fresh = APP_TRUE;
         input.imu_id_ok = APP_TRUE;
         input.pitch_cdeg = 0;
+        input.pitch_rate_cdeg_s = 0;
         input.encoder_valid = APP_TRUE;
         input.left_count = (s32)t;
         input.right_count = (s32)t;
@@ -311,10 +318,11 @@ static int s48_scheduler_uses_fuzzy_path(FILE *out)
         app_scheduler_run_due(&ctx, bsp_timebase_now_ms());
     }
     pass = (ctx.app_state == APP_STATE_GROUND_TRACK &&
-            ctx.steering_offset_us != 0 &&
+            ctx.turn_delta_mm_s != 0 &&
             ctx.fuzzy_kp > 0 &&
-            ctx.steering_left_pulse_us != ctx.steering_right_pulse_us);
-    write_result(out, "S48", pass, pass ? "scheduler fuzzy steering path affects output" : "scheduler steering path inactive", ctx.steering_offset_us, ctx.fuzzy_kp, ctx.track_mode);
+            ctx.left_speed_target_mm_s != ctx.right_speed_target_mm_s &&
+            host_bsp_steering_apply_count() == 0u);
+    write_result(out, "S48", pass, pass ? "scheduler fuzzy turn path affects differential output" : "scheduler differential turn path inactive", ctx.turn_delta_mm_s, ctx.fuzzy_kp, ctx.track_mode);
     return pass;
 }
 
@@ -343,7 +351,7 @@ int main(int argc, char **argv)
     passed += s42_right_error_only(out); total++;
     passed += s43_pi_limits(out); total++;
     passed += s44_encoder_invalid_zero(out); total++;
-    passed += s45_dual_servo_sign(out); total++;
+    passed += s45_differential_sign(out); total++;
     passed += s46_arbitration_preserves_independent_outputs(out); total++;
     passed += s47_safe_states_center(out); total++;
     passed += s48_scheduler_uses_fuzzy_path(out); total++;

@@ -145,6 +145,8 @@ def pitch_for(kind, t):
             return 9000
         if t < 1700:
             return ramp(9000, 0, t, 1450, 1700)
+        if t < 1900:
+            return 0
         return 9000
     if kind == "curved_cylinder":
         if t < 600:

@@ -9,6 +9,7 @@
 #include "../../BSP/bsp_suction.h"
 #include "../../BSP/bsp_timebase.h"
 #include "../../BSP/bsp_ui.h"
+#include "../../Track/track_route_event.h"
 
 static u32 g_now_ms;
 static host_sil_input_t g_input;
@@ -18,6 +19,7 @@ static s16 g_drive_right_native;
 static u16 g_steering_pulse_us;
 static u16 g_steering_left_pulse_us;
 static u16 g_steering_right_pulse_us;
+static u16 g_steering_apply_count;
 static suction_command_t g_suction_command;
 static u16 g_suction_native_output;
 static app_state_t g_last_ui_state;
@@ -29,6 +31,7 @@ void host_bsp_reset(void)
     g_input.manual_arm = APP_FALSE;
     g_input.suction_authorize = APP_FALSE;
     g_input.transition_candidate = APP_FALSE;
+    g_input.route_event = track_route_event_none();
     g_input.emag_valid = APP_TRUE;
     g_input.line_error = 0;
     g_input.signal_quality = LINE_QUALITY_MIN;
@@ -41,6 +44,7 @@ void host_bsp_reset(void)
     g_input.imu_fresh = APP_TRUE;
     g_input.imu_id_ok = APP_TRUE;
     g_input.pitch_cdeg = 0;
+    g_input.pitch_rate_cdeg_s = 0;
     g_input.encoder_valid = APP_TRUE;
     g_input.left_count = 0l;
     g_input.right_count = 0l;
@@ -55,6 +59,7 @@ void host_bsp_reset(void)
     g_drive_right_native = DRIVE_SAFE_ZERO;
     g_steering_left_pulse_us = STEERING_LEFT_CENTER_US;
     g_steering_right_pulse_us = STEERING_RIGHT_CENTER_US;
+    g_steering_apply_count = 0u;
     g_steering_pulse_us = (u16)(((u32)g_steering_left_pulse_us +
                                  (u32)g_steering_right_pulse_us) / 2ul);
     g_suction_command.mode = SUCTION_OFF;
@@ -79,6 +84,11 @@ u8 host_bsp_transition_candidate(void)
     return g_input.transition_candidate;
 }
 
+track_route_event_t host_bsp_route_event(void)
+{
+    return g_input.route_event;
+}
+
 u8 host_bsp_kill_switch(void)
 {
     return g_input.kill_switch;
@@ -92,6 +102,11 @@ u8 host_bsp_control_period_ok(void)
 s16 host_bsp_force_app_state(void)
 {
     return g_input.force_app_state;
+}
+
+u16 host_bsp_steering_apply_count(void)
+{
+    return g_steering_apply_count;
 }
 
 void bsp_timebase_init(void)
@@ -162,6 +177,7 @@ void bsp_steering_apply(u16 steering_pulse_us)
 
 void bsp_steering_apply_pair(u16 left_pulse_us, u16 right_pulse_us)
 {
+    g_steering_apply_count = (u16)(g_steering_apply_count + 1u);
     if (left_pulse_us < STEERING_LEFT_MIN_US) left_pulse_us = STEERING_LEFT_MIN_US;
     if (left_pulse_us > STEERING_LEFT_MAX_US) left_pulse_us = STEERING_LEFT_MAX_US;
     if (right_pulse_us < STEERING_RIGHT_MIN_US) right_pulse_us = STEERING_RIGHT_MIN_US;
@@ -298,6 +314,7 @@ attitude_sample_t bsp_imu_read(void)
     attitude_sample_t sample;
     sample.roll_cdeg = 0;
     sample.pitch_cdeg = g_input.pitch_cdeg;
+    sample.pitch_rate_cdeg_s = g_input.pitch_rate_cdeg_s;
     sample.yaw_rate_cdeg_s = 0;
     sample.timestamp_ms = g_input.time_ms;
     sample.id_ok = g_input.imu_id_ok;

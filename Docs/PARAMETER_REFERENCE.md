@@ -1,53 +1,75 @@
 # 参数参考
 
-## 调度周期
+用户后续优先只改 `App/competition_profile.h`。除非新增硬件证据，不要改 scheduler、状态机或 BSP。
 
-| 参数 | 值 | 说明 |
+## 差速与五路电磁
+
+| 参数 | 默认 | 说明 |
 | --- | ---: | --- |
-| `TASK_FAST_SENSOR_PERIOD_MS` | 1 | 快速传感采样周期 |
-| `TASK_CONTROL_PERIOD_MS` | 2 | 控制周期 |
-| `TASK_TRACK_PERIOD_MS` | 20 | 赛道策略周期 |
-| `TASK_HEALTH_PERIOD_MS` | 50 | 健康检查周期 |
-| `TASK_UI_TELEMETRY_PERIOD_MS` | 100 | UI/遥测周期 |
-| `CONTROL_OVERRUN_LIMIT_MS` | 6 | Host-SIL 中的控制周期超时阈值语义 |
+| `LINE_DIRECTION_SIGN` | 1 | 实车确认左右符号后只改这里 |
+| `LINE_VALID_SUM_MIN` | 160 | 最小有效总能量 |
+| `LINE_LOST_QUALITY_MIN` | 200 | 丢线质量阈值 |
+| `LINE_FILTER_ALPHA` | 3 | 误差低通系数，分母 `LINE_FILTER_DENOM=4` |
+| `DIFF_TURN_SIGN` | 1 | 差速转向方向，只能 +1/-1 |
+| `DIFF_TURN_DELTA_LIMIT_MM_S` | 90 | 差速转向速度差限幅 |
+| `DIFF_TARGET_SPEED_LIMIT_MM_S` | 260 | 单轮目标速度限幅 |
+| `DIFF_LINE_LOST_SEARCH_SPEED_MM_S` | 45 | 丢线搜索低速 |
+| `DIFF_LINE_LOST_STOP_TIME_MS` | 250 | 丢线超时停车 |
 
-## 执行器
+## 速度 PI
 
-| 参数 | 值 | 说明 |
+| 参数 | 默认 | 说明 |
 | --- | ---: | --- |
-| `DRIVE_LIMIT_ABS` | 1000 | 左右驱动 native 命令限幅 |
-| `DRIVE_PWM_FREQ_HZ` | 12500 | 推进 PWM 频率 |
-| `STEERING_CENTER_US` | 1510 | 舵机中值 |
-| `STEERING_MIN_PULSE_US` | 1000 | 舵机最小脉宽 |
-| `STEERING_MAX_PULSE_US` | 2000 | 舵机最大脉宽 |
-| `STEERING_MAX_OFFSET_US` | 500 | 线误差转向偏置限幅 |
-| `STEERING_PWM_FREQ_HZ` | 50 | 舵机 PWM 频率 |
+| `SPEED_KP` | 32 | 左右轮共用初始 Kp，PI 状态独立 |
+| `SPEED_KI` | 4 | 左右轮共用初始 Ki，PI 状态独立 |
+| `SPEED_INTEGRAL_LIMIT` | 3000 | 积分限幅 |
+| `SPEED_OUTPUT_LIMIT` | 260 | native 输出限幅 |
+| `SPEED_ACCEL_LIMIT` | 12 | 每控制周期加速度/输出变化限制 |
 
-## 负压
+## 模糊与基础 PD
 
-| 参数 | 值 | 说明 |
+| 参数 | 默认 | 说明 |
 | --- | ---: | --- |
-| `SUCTION_HW_VERIFIED` | 0 | 不允许真实负压输出 |
-| `BOARD_SUCTION_SIGNAL_VERIFIED` | 0 | P23 到 ESC 信号链未验证 |
-| `SUCTION_BENCH_TEST_ENABLE` | 0 | 负压台架测试未授权 |
-| `SUCTION_SAFE_OFF_NATIVE` | 0 | 安全关断 native 值 |
-| `SUCTION_PRECHARGE_NATIVE` | 0 | 真实预充输出保持 0 |
-| `SUCTION_HOLD_NATIVE` | 0 | 真实保持输出保持 0 |
-| `SUCTION_BOOST_NATIVE` | 0 | 真实 boost 输出保持 0 |
-| `SUCTION_EMERGENCY_HOLD_NATIVE` | 0 | 真实 emergency hold 输出保持 0 |
+| `GROUND_STEERING_KP` | 115 | 基础地面差速 P |
+| `GROUND_STEERING_KD` | 70 | 基础地面差速 D |
+| `FUZZY_ENABLE` | 0 | 默认先跑基础 PD，稳定后再置 1 |
 
-Host-SIL `logical_wall` profile 使用逻辑吸附请求覆盖完整状态机测试，但 `bsp_suction_last_native_output()` 仍为 0。
+## 速度档位
 
-## 状态阈值
-
-| 参数 | 值 | 说明 |
+| 参数 | 默认 | 说明 |
 | --- | ---: | --- |
-| `LINE_QUALITY_MIN` | 200 | 线信号质量下限 |
-| `SENSOR_STALE_TIMEOUT_MS` | 50 | 姿态新鲜度超时 |
-| `GROUND_CONFIRM_TIME_MS` | 300 | 落地确认时间 |
-| `TRANSITION_TIMEOUT_MS` | 3000 | 过渡超时 |
-| `PRECHARGE_MIN_TIME_MS` | 100 | 逻辑预充最小时间 |
-| `GROUND_PITCH_MAX_CDEG` | 1200 | 地面 pitch 范围 |
-| `TRANSITION_PITCH_CDEG` | 2000 | 过渡 pitch 阈值 |
-| `WALL_PITCH_CDEG` | 6000 | 墙面 pitch 阈值 |
-| `ADHESION_RISK_LIMIT` | 700 | 吸附风险限速阈值 |
+| `GROUND_STRAIGHT_SPEED_MM_S` | 180 | 保守地面直线速度 |
+| `GROUND_CURVE_SPEED_MM_S` | 140 | 保守普通弯速度 |
+| `SHARP_CURVE_SPEED_MM_S` | 95 | 急弯/圆柱保守速度 |
+| `TRANSITION_SPEED_MM_S` | 70 | 软件过渡速度，不是上墙许可 |
+| `WALL_SPEED_MM_S` | 80 | Host-SIL 墙面速度，不是上墙许可 |
+
+## P2.2 风机 ESC
+
+| 参数 | 默认 | 说明 |
+| --- | ---: | --- |
+| `BOARD_FAN_PWM_MAPPED` | 1 | P2.2/PWM2P_3 资源已固定 |
+| `FAN_ESC_PHYSICAL_OUTPUT_ENABLE` | 0 | 真实 P2.2 输出禁用 |
+| `WALL_RUN_ENABLE` | 0 | 真实上墙运行禁用 |
+| `FAN_PWM_FREQ_HZ` | 50 | RC ESC 默认频率 |
+| `FAN_ESC_MIN_US` | 1000 | 最小/arming 脉宽 |
+| `FAN_ESC_MAX_US` | 2000 | 最大限幅 |
+| `FAN_ESC_ARM_TIME_MS` | 2500 | 台架允许后 arming 时间 |
+| `FAN_PRECHARGE_US` | 1350 | 软件预充起点 |
+| `FAN_PRECHARGE_TIME_MS` | 500 | 预充持续时间 |
+| `FAN_HOLD_US` | 1450 | 软件保持起点 |
+| `FAN_BOOST_US` | 1600 | 软件增强起点 |
+
+## IMU 状态机阈值
+
+| 参数 | 默认 | 说明 |
+| --- | ---: | --- |
+| `IMU_PITCH_SIGN` | 1 | IMU pitch 极性 |
+| `IMU_PITCH_OFFSET_CDEG` | 0 | pitch 零偏 |
+| `IMU_WALL_ENTER_CDEG` | 4500 | 上墙确认阈值 |
+| `IMU_WALL_EXIT_CDEG` | 2500 | 下墙/离墙阈值 |
+| `IMU_TRANSITION_CONFIRM_MS` | 150 | 过渡连续确认时间 |
+| `IMU_GROUND_CONFIRM_MS` | 250 | 落地连续确认时间 |
+| `IMU_STALE_TIMEOUT_MS` | 100 | IMU stale 超时 |
+
+`SUCTION_HW_VERIFIED=0` 作为旧负压安全门继续保留，不代表当前 P2.2 风机已经允许真实输出。

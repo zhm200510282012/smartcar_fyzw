@@ -1,11 +1,11 @@
 #include "app_scheduler.h"
+#include "app_build_profile.h"
 #include "app_config.h"
 #include "app_output_arbitration.h"
 #include "app_state_machine.h"
 #include "app_safety.h"
 #include "../BSP/bsp_drive.h"
-#include "../BSP/bsp_steering.h"
-#include "../BSP/bsp_suction.h"
+#include "../BSP/bsp_fan_esc.h"
 #include "../BSP/bsp_emag.h"
 #include "../BSP/bsp_imu.h"
 #include "../BSP/bsp_encoder.h"
@@ -13,17 +13,18 @@
 #include "../BSP/bsp_power.h"
 #include "../Control/ctrl_adhesion.h"
 #include "../Control/ctrl_attitude.h"
+#include "../Control/ctrl_differential_drive.h"
+#include "../Control/ctrl_fuzzy_turn.h"
 #include "../Control/ctrl_line.h"
 #include "../Control/ctrl_profile.h"
 #include "../Control/ctrl_speed.h"
-#include "../Control/ctrl_fuzzy_steering.h"
-#include "../Control/ctrl_steering.h"
-#include "../Control/ctrl_vehicle.h"
 #include "../Track/track_features.h"
+#include "../Track/track_route_event.h"
 #include "../Track/track_route_profile.h"
 #include "../Track/track_state_machine.h"
 #include "../Track/track_strategy.h"
 #include "../Track/track_surface_state.h"
+#include "../Track/track_wall_logic.h"
 #ifdef HOST_SIL
 #include "../sim/host/host_bsp.h"
 #endif
@@ -34,10 +35,13 @@ static u32 g_last_track;
 static u32 g_last_health;
 static u32 g_last_ui;
 static track_mode_state_t g_track_mode_state;
-static ctrl_fuzzy_steering_state_t g_fuzzy_steering_state;
+static ctrl_fuzzy_turn_state_t g_fuzzy_turn_state;
 static line_filter_state_t g_line_filter_state;
 static speed_pi_state_t g_left_speed_pi;
 static speed_pi_state_t g_right_speed_pi;
+static track_wall_logic_t g_wall_logic;
+static ctrl_adhesion_state_t g_adhesion_state;
+static u16 g_line_lost_elapsed_ms;
 
 static u8 control_or_wall_active(app_state_t state)
 {
@@ -79,9 +83,6 @@ static void update_sensor_health(app_context_t *ctx, u32 now_ms)
     if (ctx->health.power_ok == APP_FALSE) {
         ctx->faults = (fault_code_t)(ctx->faults | FAULT_HARD_POWER);
     }
-    if (control_or_wall_active(ctx->app_state) && ctx->health.emag_ok == APP_FALSE) {
-        ctx->faults = (fault_code_t)(ctx->faults | FAULT_LINE_LOST);
-    }
     if ((ctx->app_state == APP_STATE_TRANSITION_UP ||
          ctx->app_state == APP_STATE_WALL_TRACK ||
          ctx->app_state == APP_STATE_CYLINDER_TRACK ||
@@ -103,6 +104,15 @@ static u8 read_transition_candidate(void)
     return host_bsp_transition_candidate();
 #else
     return APP_FALSE;
+#endif
+}
+
+static track_route_event_t read_route_event(void)
+{
+#ifdef HOST_SIL
+    return host_bsp_route_event();
+#else
+    return track_route_event_none();
 #endif
 }
 
@@ -128,7 +138,10 @@ void app_scheduler_init(void)
     ctrl_speed_pi_init(&g_left_speed_pi);
     ctrl_speed_pi_init(&g_right_speed_pi);
     track_route_profile_init(&g_track_mode_state);
-    ctrl_fuzzy_steering_init(&g_fuzzy_steering_state);
+    ctrl_fuzzy_turn_init(&g_fuzzy_turn_state);
+    track_wall_logic_init(&g_wall_logic);
+    ctrl_adhesion_init(&g_adhesion_state);
+    g_line_lost_elapsed_ms = 0u;
 }
 
 static void update_line_error_terms(app_context_t *ctx)
@@ -165,10 +178,22 @@ static void update_track_mode(app_context_t *ctx)
     }
 }
 
-static void update_fuzzy_steering(app_context_t *ctx)
+static u16 estimate_adhesion_risk(const app_context_t *ctx)
 {
-    ctrl_fuzzy_steering_input_t input;
-    s16 offset;
+    u16 risk = 0u;
+    if (ctx->surface_state == SURFACE_UNKNOWN) risk = (u16)(risk + 250u);
+    if (ctx->health.imu_fresh == APP_FALSE) risk = (u16)(risk + 250u);
+    if (ctx->emag.line_lost != APP_FALSE || ctx->emag.line_quality < LINE_QUALITY_MIN) risk = (u16)(risk + 250u);
+    if (ctx->health.encoder_ok == APP_FALSE) risk = (u16)(risk + 150u);
+    if (ctx->health.power_ok == APP_FALSE) risk = (u16)(risk + 150u);
+    if (risk > 1000u) risk = 1000u;
+    return risk;
+}
+
+static void update_fuzzy_turn(app_context_t *ctx, u8 outputs_allowed)
+{
+    ctrl_fuzzy_turn_input_t input;
+    s16 turn;
 
     input.mode = ctx->track_mode;
     input.app_state = ctx->app_state;
@@ -176,26 +201,112 @@ static void update_fuzzy_steering(app_context_t *ctx)
     input.error_rate = ctx->line_error_rate;
     input.signal_quality = ctx->emag.line_quality;
     input.dt_ms = TASK_CONTROL_PERIOD_MS;
-    input.outputs_allowed = app_safety_outputs_allowed(ctx);
+    input.outputs_allowed = outputs_allowed;
 
-    offset = ctrl_fuzzy_steering_update(&g_fuzzy_steering_state, &input);
-    ctx->steering_offset_us = offset;
-    ctx->fuzzy_kp = g_fuzzy_steering_state.gain.kp;
-    ctx->fuzzy_ki = g_fuzzy_steering_state.gain.ki;
-    ctx->fuzzy_kd = g_fuzzy_steering_state.gain.kd;
+    turn = ctrl_fuzzy_turn_update(&g_fuzzy_turn_state, &input);
+    ctx->turn_delta_mm_s = turn;
+    ctx->steering_offset_us = 0;
+    ctx->fuzzy_kp = g_fuzzy_turn_state.gain.kp;
+    ctx->fuzzy_ki = g_fuzzy_turn_state.gain.ki;
+    ctx->fuzzy_kd = g_fuzzy_turn_state.gain.kd;
 }
 
 static void reset_fuzzy_if_blocked(app_context_t *ctx)
 {
-    if (ctrl_fuzzy_steering_needs_reset(ctx->app_state,
-                                        ctx->track_mode,
-                                        ctx->emag.line_quality,
-                                        app_safety_outputs_allowed(ctx)) != APP_FALSE) {
-        ctrl_fuzzy_steering_reset(&g_fuzzy_steering_state);
-        ctx->fuzzy_kp = g_fuzzy_steering_state.gain.kp;
-        ctx->fuzzy_ki = g_fuzzy_steering_state.gain.ki;
-        ctx->fuzzy_kd = g_fuzzy_steering_state.gain.kd;
+    if (ctrl_fuzzy_turn_needs_reset(ctx->app_state,
+                                    ctx->track_mode,
+                                    ctx->emag.line_quality,
+                                    app_safety_outputs_allowed(ctx)) != APP_FALSE) {
+        ctrl_fuzzy_turn_reset(&g_fuzzy_turn_state);
+        ctx->turn_delta_mm_s = 0;
+        ctx->fuzzy_kp = g_fuzzy_turn_state.gain.kp;
+        ctx->fuzzy_ki = g_fuzzy_turn_state.gain.ki;
+        ctx->fuzzy_kd = g_fuzzy_turn_state.gain.kd;
     }
+}
+
+static app_state_t app_state_from_wall_output(const track_wall_output_t *wall)
+{
+    switch (wall->state) {
+    case TRACK_WALL_WALL_APPROACH: return APP_STATE_TRANSITION_CANDIDATE;
+    case TRACK_WALL_FAN_PRECHARGE:
+        if (wall->state_elapsed_ms >= FAN_PRECHARGE_TIME_MS) {
+            return APP_STATE_APPROACH_TRANSITION;
+        }
+        return APP_STATE_SUCTION_PRECHARGE;
+    case TRACK_WALL_TRANSITION_UP: return APP_STATE_TRANSITION_UP;
+    case TRACK_WALL_WALL_TRACK: return APP_STATE_WALL_TRACK;
+    case TRACK_WALL_CYLINDER_TRACK: return APP_STATE_CYLINDER_TRACK;
+    case TRACK_WALL_TRANSITION_DOWN: return APP_STATE_TRANSITION_DOWN;
+    case TRACK_WALL_GROUND_RECOVERY: return APP_STATE_GROUND_RECOVERY;
+    case TRACK_WALL_FAILSAFE_HOLD: return APP_STATE_WALL_FAILSAFE_HOLD;
+    case TRACK_WALL_GROUND_TRACK:
+    default:
+        return APP_STATE_GROUND_TRACK;
+    }
+}
+
+static void apply_wall_output(app_context_t *ctx, const track_wall_output_t *wall)
+{
+    if (wall == 0) {
+        return;
+    }
+    ctx->wall_state = wall->state;
+    if (ctx->app_state == APP_STATE_GROUND_TRACK ||
+        ctx->app_state == APP_STATE_TRANSITION_CANDIDATE ||
+        ctx->app_state == APP_STATE_SUCTION_PRECHARGE ||
+        ctx->app_state == APP_STATE_APPROACH_TRANSITION ||
+        ctx->app_state == APP_STATE_TRANSITION_UP ||
+        ctx->app_state == APP_STATE_WALL_TRACK ||
+        ctx->app_state == APP_STATE_CYLINDER_TRACK ||
+        ctx->app_state == APP_STATE_TRANSITION_DOWN ||
+        ctx->app_state == APP_STATE_GROUND_RECOVERY) {
+        app_state_t mapped_state;
+        mapped_state = app_state_from_wall_output(wall);
+        if (ctx->app_state != mapped_state) {
+            ctx->app_state = mapped_state;
+            ctx->state_elapsed_ms = 0u;
+        }
+        if (wall->state != TRACK_WALL_GROUND_TRACK) {
+            ctx->state_elapsed_ms = wall->state_elapsed_ms;
+        }
+        if (wall->state == TRACK_WALL_GROUND_RECOVERY &&
+            wall->state_elapsed_ms >= IMU_GROUND_CONFIRM_MS) {
+            ctx->app_state = APP_STATE_FINISHED;
+            ctx->state_elapsed_ms = 0u;
+        }
+    }
+    ctx->track_mode = wall->track_mode;
+    ctx->speed_limit_mm_s = wall->speed_limit_mm_s;
+}
+
+static u8 update_line_lost_guard(app_context_t *ctx)
+{
+    if (ctx->emag.line_lost == APP_FALSE && ctx->emag.valid != APP_FALSE) {
+        g_line_lost_elapsed_ms = 0u;
+        return APP_FALSE;
+    }
+
+    g_line_lost_elapsed_ms = (u16)(g_line_lost_elapsed_ms + TASK_CONTROL_PERIOD_MS);
+    ctx->track_mode = TRACK_MODE_LINE_LOST;
+    if (g_line_lost_elapsed_ms >= DIFF_LINE_LOST_STOP_TIME_MS) {
+        ctx->faults = (fault_code_t)(ctx->faults | FAULT_LINE_LOST);
+        return APP_TRUE;
+    }
+    return APP_FALSE;
+}
+
+static u8 wall_process_active(const track_route_event_t *route_event)
+{
+    if (g_wall_logic.state != TRACK_WALL_GROUND_TRACK) {
+        return APP_TRUE;
+    }
+    if (route_event != 0 &&
+        route_event->wall_approach_event != APP_FALSE &&
+        APP_WALL_STATE_CAPABLE != 0) {
+        return APP_TRUE;
+    }
+    return APP_FALSE;
 }
 
 void app_scheduler_run_due(app_context_t *ctx, u32 now_ms)
@@ -213,14 +324,24 @@ void app_scheduler_run_due(app_context_t *ctx, u32 now_ms)
 
     if ((now_ms - g_last_control) >= TASK_CONTROL_PERIOD_MS) {
         s16 target_speed_mm_s;
+        differential_drive_output_t diff_output;
         speed_pi_output_t speed_output;
         u8 feature_transition;
+        u8 outputs_allowed;
+        u8 line_lost_stop;
+        track_route_event_t route_event;
+        track_wall_input_t wall_input;
+        track_wall_output_t wall_output;
 
         g_last_control = now_ms;
         ctx->emag = ctrl_line_update(ctx->emag);
         update_line_error_terms(ctx);
         ctx->attitude = ctrl_attitude_update(ctx->attitude, TASK_CONTROL_PERIOD_MS);
         ctx->transition_candidate = read_transition_candidate();
+        route_event = read_route_event();
+        if (ctx->transition_candidate != APP_FALSE) {
+            route_event.wall_approach_event = APP_TRUE;
+        }
         update_sensor_health(ctx, now_ms);
         ctx->surface_state = track_surface_state_update(ctx->surface_state, &ctx->attitude);
         feature_transition = track_features_detect_transition(&ctx->emag);
@@ -228,22 +349,55 @@ void app_scheduler_run_due(app_context_t *ctx, u32 now_ms)
 #ifdef HOST_SIL
         apply_host_fault_injection(ctx);
 #endif
-        app_state_machine_step(ctx, TASK_CONTROL_PERIOD_MS);
+        if (wall_process_active(&route_event) == APP_FALSE ||
+            ctx->app_state < APP_STATE_GROUND_TRACK ||
+            ctx->app_state == APP_STATE_GROUND_FAULT ||
+            ctx->app_state == APP_STATE_HARD_FAULT ||
+            ctx->app_state == APP_STATE_FINISHED) {
+            app_state_machine_step(ctx, TASK_CONTROL_PERIOD_MS);
+        }
         update_sensor_health(ctx, now_ms);
+        ctx->adhesion_risk = estimate_adhesion_risk(ctx);
+        wall_input.route_event = route_event;
+        wall_input.attitude = ctx->attitude;
+        wall_input.line_lost = ctx->emag.line_lost;
+        wall_input.adhesion_risk = ctx->adhesion_risk;
+        wall_input.dt_ms = TASK_CONTROL_PERIOD_MS;
+        wall_output = track_wall_logic_update(&g_wall_logic, &wall_input);
         update_track_mode(ctx);
+        apply_wall_output(ctx, &wall_output);
 
-        ctx->speed_limit_mm_s = ctrl_profile_speed_limit(ctx->surface_state, ctx->adhesion_risk);
+        if (ctx->speed_limit_mm_s <= 0 ||
+            ctx->speed_limit_mm_s > ctrl_profile_speed_limit(ctx->surface_state, ctx->adhesion_risk)) {
+            ctx->speed_limit_mm_s = ctrl_profile_speed_limit(ctx->surface_state, ctx->adhesion_risk);
+        }
         target_speed_mm_s = track_strategy_target_speed_for_mode(ctx->track_mode);
         if (target_speed_mm_s > ctx->speed_limit_mm_s) {
             target_speed_mm_s = ctx->speed_limit_mm_s;
         }
-        if (app_safety_outputs_allowed(ctx) == APP_FALSE) {
+        line_lost_stop = update_line_lost_guard(ctx);
+        outputs_allowed = app_safety_outputs_allowed(ctx);
+        if (wall_output.drive_allowed == APP_FALSE || line_lost_stop != APP_FALSE) {
+            outputs_allowed = APP_FALSE;
+        }
+        if (ctx->emag.line_lost != APP_FALSE && line_lost_stop == APP_FALSE && outputs_allowed != APP_FALSE) {
+            target_speed_mm_s = DIFF_LINE_LOST_SEARCH_SPEED_MM_S;
+            ctx->turn_delta_mm_s = 0;
+        }
+        if (outputs_allowed == APP_FALSE) {
             target_speed_mm_s = DRIVE_SAFE_ZERO;
         }
         ctx->target_speed_mm_s = target_speed_mm_s;
-        ctx->left_speed_target_mm_s = target_speed_mm_s;
-        ctx->right_speed_target_mm_s = target_speed_mm_s;
-        if (ctx->encoder.valid == APP_FALSE || app_safety_outputs_allowed(ctx) == APP_FALSE) {
+        update_fuzzy_turn(ctx, outputs_allowed);
+        if (ctx->emag.line_lost != APP_FALSE) {
+            ctx->turn_delta_mm_s = 0;
+        }
+        diff_output = ctrl_differential_drive_mix(target_speed_mm_s,
+                                                  ctx->turn_delta_mm_s,
+                                                  outputs_allowed);
+        ctx->left_speed_target_mm_s = diff_output.left_target_mm_s;
+        ctx->right_speed_target_mm_s = diff_output.right_target_mm_s;
+        if (ctx->encoder.valid == APP_FALSE || outputs_allowed == APP_FALSE) {
             ctrl_speed_pi_reset(&g_left_speed_pi);
             ctrl_speed_pi_reset(&g_right_speed_pi);
         }
@@ -255,17 +409,20 @@ void app_scheduler_run_due(app_context_t *ctx, u32 now_ms)
         ctx->left_drive_command_native = speed_output.left_native;
         ctx->right_drive_command_native = speed_output.right_native;
         ctx->drive_command_native = speed_output.average_native;
-        update_fuzzy_steering(ctx);
-        ctrl_vehicle_update(ctx);
-        ctrl_adhesion_update(ctx);
+        ctx->fan_cmd = ctrl_adhesion_update(&g_adhesion_state,
+                                            ctx->wall_state,
+                                            ctx->adhesion_risk,
+                                            TASK_CONTROL_PERIOD_MS);
         app_safety_apply_profile(ctx, app_safety_select_profile(ctx));
         reset_fuzzy_if_blocked(ctx);
-        ctrl_vehicle_update(ctx);
         app_output_arbitrate(ctx);
         reset_fuzzy_if_blocked(ctx);
+        if (outputs_allowed == APP_FALSE) {
+            ctrl_speed_pi_reset(&g_left_speed_pi);
+            ctrl_speed_pi_reset(&g_right_speed_pi);
+        }
         bsp_drive_apply_lr(ctx->left_drive_command_native, ctx->right_drive_command_native);
-        bsp_steering_apply_pair(ctx->steering_left_pulse_us, ctx->steering_right_pulse_us);
-        bsp_suction_apply(&ctx->suction_cmd);
+        bsp_fan_esc_apply(&ctx->fan_cmd);
     }
 
     if ((now_ms - g_last_track) >= TASK_TRACK_PERIOD_MS) {

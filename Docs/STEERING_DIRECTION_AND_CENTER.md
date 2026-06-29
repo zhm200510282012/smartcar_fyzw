@@ -1,23 +1,20 @@
-# Steering Direction And Center
+# 舵机路径状态
 
-All user-facing steering items are in `App/competition_profile.h`.
+当前车辆硬件事实为无舵机差速车。`BSP/bsp_steering.c`、`Control/ctrl_vehicle.c`、`Control/ctrl_steering.c` 只作为历史文件保留，不在 `app_scheduler.c`、`app_output_arbitration.c` 或最终 BSP 输出路径中调用。
 
-## Current Software Chain
+禁止把以下路径重新作为主控制链：
 
 ```text
-steering_offset_us from fuzzy/base PD
--> left pulse  = STEERING_LEFT_CENTER_US  + STEERING_LEFT_SIGN  * offset
--> right pulse = STEERING_RIGHT_CENTER_US + STEERING_RIGHT_SIGN * offset
+模糊 PID -> steering_offset_us -> steering_left/right pulse
+bsp_steering_apply_pair()
+P1.0 / P1.2
+PWM1 / PWM2 舵机输出
 ```
 
-The fuzzy PID module only computes `steering_offset_us`. It does not write PWM directly.
+当前主控制链为：
 
-## Bench Procedure
+```text
+模糊 PID -> turn_delta_mm_s -> 左右目标轮速 -> 左右速度 PI -> bsp_drive_apply_lr()
+```
 
-1. Power the steering servos with the car lifted or wheels free.
-2. Set both centers until the steering linkage is mechanically neutral.
-3. Command a small positive offset.
-4. If one side moves the wrong way, change only that side's `STEERING_*_SIGN`.
-5. Confirm limits do not hit mechanical stops.
-
-Fault, finish, unarmed, kill, and line-lost fault paths return each servo to its own center.
+若未来保留遥测字段 `steering_offset_us`、`steering_left_pulse_us`、`steering_right_pulse_us`，它们只能用于兼容旧日志，不得参与真实执行输出。

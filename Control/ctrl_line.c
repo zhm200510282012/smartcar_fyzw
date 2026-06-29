@@ -1,7 +1,7 @@
 #include "ctrl_line.h"
 
-static const s16 g_line_weights[5] = {
-    -2, -1, 0, 1, 2
+static const s16 g_emag_weights[EMAG_CHANNEL_COUNT] = {
+    -2000, -1000, 0, 1000, 2000
 };
 
 static void mark_lost(emag_sample_t *sample)
@@ -20,16 +20,16 @@ emag_sample_t ctrl_line_update(emag_sample_t input)
     s32 weighted;
     s32 error;
 
-    if (input.channel_count < 5u || input.valid == APP_FALSE) {
+    if (input.channel_count < EMAG_CHANNEL_COUNT || input.valid == APP_FALSE) {
         mark_lost(&input);
         return input;
     }
 
     sum = 0ul;
     weighted = 0l;
-    for (i = 0u; i < 5u; i++) {
+    for (i = 0u; i < EMAG_CHANNEL_COUNT; i++) {
         sum += (u32)input.norm[i];
-        weighted += (s32)g_line_weights[i] * (s32)input.norm[i];
+        weighted += (s32)g_emag_weights[i] * (s32)input.norm[i];
     }
 
     if (sum < LINE_VALID_SUM_MIN) {
