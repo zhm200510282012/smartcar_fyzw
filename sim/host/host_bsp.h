@@ -11,6 +11,8 @@ typedef struct {
     u8 emag_valid;
     s16 line_error;
     u16 signal_quality;
+    u8 emag_norm_valid;
+    u16 emag_norm[5];
     u8 imu_fresh;
     u8 imu_id_ok;
     s16 pitch_cdeg;

@@ -32,6 +32,12 @@ void host_bsp_reset(void)
     g_input.emag_valid = APP_TRUE;
     g_input.line_error = 0;
     g_input.signal_quality = LINE_QUALITY_MIN;
+    g_input.emag_norm_valid = APP_FALSE;
+    g_input.emag_norm[0] = 0u;
+    g_input.emag_norm[1] = 0u;
+    g_input.emag_norm[2] = LINE_QUALITY_MIN;
+    g_input.emag_norm[3] = 0u;
+    g_input.emag_norm[4] = 0u;
     g_input.imu_fresh = APP_TRUE;
     g_input.imu_id_ok = APP_TRUE;
     g_input.pitch_cdeg = 0;
@@ -47,9 +53,10 @@ void host_bsp_reset(void)
     g_drive_command_native = DRIVE_SAFE_ZERO;
     g_drive_left_native = DRIVE_SAFE_ZERO;
     g_drive_right_native = DRIVE_SAFE_ZERO;
-    g_steering_pulse_us = STEERING_SAFE_CENTER_US;
-    g_steering_left_pulse_us = STEERING_SAFE_CENTER_US;
-    g_steering_right_pulse_us = STEERING_SAFE_CENTER_US;
+    g_steering_left_pulse_us = STEERING_LEFT_CENTER_US;
+    g_steering_right_pulse_us = STEERING_RIGHT_CENTER_US;
+    g_steering_pulse_us = (u16)(((u32)g_steering_left_pulse_us +
+                                 (u32)g_steering_right_pulse_us) / 2ul);
     g_suction_command.mode = SUCTION_OFF;
     g_suction_command.command_native = SUCTION_SAFE_OFF_NATIVE;
     g_suction_command.armed = APP_FALSE;
@@ -142,9 +149,10 @@ s16 bsp_drive_last_right_native(void)
 
 void bsp_steering_init(void)
 {
-    g_steering_pulse_us = STEERING_SAFE_CENTER_US;
-    g_steering_left_pulse_us = STEERING_SAFE_CENTER_US;
-    g_steering_right_pulse_us = STEERING_SAFE_CENTER_US;
+    g_steering_left_pulse_us = STEERING_LEFT_CENTER_US;
+    g_steering_right_pulse_us = STEERING_RIGHT_CENTER_US;
+    g_steering_pulse_us = (u16)(((u32)g_steering_left_pulse_us +
+                                 (u32)g_steering_right_pulse_us) / 2ul);
 }
 
 void bsp_steering_apply(u16 steering_pulse_us)
@@ -154,10 +162,10 @@ void bsp_steering_apply(u16 steering_pulse_us)
 
 void bsp_steering_apply_pair(u16 left_pulse_us, u16 right_pulse_us)
 {
-    if (left_pulse_us < STEERING_MIN_PULSE_US) left_pulse_us = STEERING_MIN_PULSE_US;
-    if (left_pulse_us > STEERING_MAX_PULSE_US) left_pulse_us = STEERING_MAX_PULSE_US;
-    if (right_pulse_us < STEERING_MIN_PULSE_US) right_pulse_us = STEERING_MIN_PULSE_US;
-    if (right_pulse_us > STEERING_MAX_PULSE_US) right_pulse_us = STEERING_MAX_PULSE_US;
+    if (left_pulse_us < STEERING_LEFT_MIN_US) left_pulse_us = STEERING_LEFT_MIN_US;
+    if (left_pulse_us > STEERING_LEFT_MAX_US) left_pulse_us = STEERING_LEFT_MAX_US;
+    if (right_pulse_us < STEERING_RIGHT_MIN_US) right_pulse_us = STEERING_RIGHT_MIN_US;
+    if (right_pulse_us > STEERING_RIGHT_MAX_US) right_pulse_us = STEERING_RIGHT_MAX_US;
     g_steering_left_pulse_us = left_pulse_us;
     g_steering_right_pulse_us = right_pulse_us;
     g_steering_pulse_us = (u16)((left_pulse_us + right_pulse_us) / 2u);
@@ -235,25 +243,48 @@ emag_sample_t bsp_emag_read(void)
 {
     emag_sample_t sample;
     u16 half_quality;
-    half_quality = (u16)(g_input.signal_quality / 2u);
-    sample.raw[0] = half_quality;
-    sample.raw[1] = half_quality;
-    sample.raw[2] = half_quality;
-    sample.raw[3] = half_quality;
-    sample.raw[4] = half_quality;
-    sample.filtered[0] = half_quality;
-    sample.filtered[1] = half_quality;
-    sample.filtered[2] = half_quality;
-    sample.filtered[3] = half_quality;
-    sample.filtered[4] = half_quality;
-    sample.norm[0] = (u16)(half_quality - (g_input.line_error / 2));
-    sample.norm[1] = half_quality;
-    sample.norm[2] = half_quality;
-    sample.norm[3] = half_quality;
-    sample.norm[4] = (u16)(half_quality + (g_input.line_error / 2));
+    s16 left_value;
+    s16 right_value;
+    u8 index;
+
+    if (g_input.emag_norm_valid != APP_FALSE) {
+        for (index = 0u; index < 5u; index++) {
+            sample.raw[index] = g_input.emag_norm[index];
+            sample.filtered[index] = g_input.emag_norm[index];
+            sample.norm[index] = g_input.emag_norm[index];
+        }
+    } else {
+        half_quality = (u16)(g_input.signal_quality / 2u);
+        left_value = (s16)half_quality;
+        right_value = (s16)half_quality;
+        if (g_input.line_error > 0) {
+            right_value = (s16)(right_value + (g_input.line_error / 2));
+        } else {
+            left_value = (s16)(left_value + ((s16)-g_input.line_error / 2));
+        }
+        if (left_value < 0) left_value = 0;
+        if (right_value < 0) right_value = 0;
+        sample.raw[0] = (u16)left_value;
+        sample.raw[1] = half_quality;
+        sample.raw[2] = half_quality;
+        sample.raw[3] = half_quality;
+        sample.raw[4] = (u16)right_value;
+        sample.filtered[0] = sample.raw[0];
+        sample.filtered[1] = sample.raw[1];
+        sample.filtered[2] = sample.raw[2];
+        sample.filtered[3] = sample.raw[3];
+        sample.filtered[4] = sample.raw[4];
+        sample.norm[0] = sample.raw[0];
+        sample.norm[1] = sample.raw[1];
+        sample.norm[2] = sample.raw[2];
+        sample.norm[3] = sample.raw[3];
+        sample.norm[4] = sample.raw[4];
+    }
     sample.line_error = g_input.line_error;
+    sample.line_quality = g_input.signal_quality;
     sample.signal_quality = g_input.signal_quality;
     sample.channel_count = 5u;
+    sample.line_lost = g_input.emag_valid ? APP_FALSE : APP_TRUE;
     sample.valid = g_input.emag_valid;
     return sample;
 }

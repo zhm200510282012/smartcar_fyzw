@@ -21,7 +21,7 @@
       "pass": true,
       "metric_a": 122,
       "metric_b": 239,
-      "metric_c": 210,
+      "metric_c": 95,
       "notes": "straight gain below sharp curve"
     },
     "S32": {
@@ -61,9 +61,9 @@
     },
     "S37": {
       "pass": true,
-      "metric_a": 500,
-      "metric_b": 180,
-      "metric_c": 210,
+      "metric_a": 180,
+      "metric_b": 95,
+      "metric_c": 95,
       "notes": "omega and sharp speeds below straight"
     },
     "S38": {

@@ -366,6 +366,11 @@
               <FilePath>..\App\app_config.h</FilePath>
             </File>
             <File>
+              <FileName>competition_profile.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\App\competition_profile.h</FilePath>
+            </File>
+            <File>
               <FileName>app_types.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\App\app_types.h</FilePath>

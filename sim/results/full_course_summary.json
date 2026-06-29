@@ -34,7 +34,7 @@
         "GROUND_TRACK"
       ],
       "output_csv": "sim\\results\\full_guard_S01_ground_straight.csv",
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 0,
       "max_hardware_suction_output": 0,
@@ -54,8 +54,8 @@
         "GROUND_TRACK"
       ],
       "output_csv": "sim\\results\\full_guard_S02_ground_curve_left_right.csv",
-      "max_speed_cmd": 500,
-      "max_steering_cmd": 28,
+      "max_speed_cmd": 145,
+      "max_steering_cmd": 9,
       "max_logical_suction_request": 0,
       "max_hardware_suction_output": 0,
       "fault_state": ""
@@ -79,7 +79,7 @@
         "WALL_TRACK"
       ],
       "output_csv": "sim\\results\\full_logical_wall_S03_precharge_before_transition.csv",
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
@@ -104,7 +104,7 @@
         "WALL_TRACK"
       ],
       "output_csv": "sim\\results\\full_logical_wall_S04_wall_track.csv",
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
@@ -132,7 +132,7 @@
         "FINISHED"
       ],
       "output_csv": "sim\\results\\full_logical_wall_S05_wall_to_ground_transition.csv",
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
@@ -159,8 +159,8 @@
         "WALL_TRACK"
       ],
       "output_csv": "sim\\results\\full_logical_wall_S06_curved_or_cylinder_mode.csv",
-      "max_speed_cmd": 500,
-      "max_steering_cmd": 27,
+      "max_speed_cmd": 145,
+      "max_steering_cmd": 9,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
       "fault_state": ""
@@ -180,7 +180,7 @@
         "GROUND_FAULT"
       ],
       "output_csv": "sim\\results\\full_guard_S07_stale_sensor_on_ground.csv",
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 0,
       "max_hardware_suction_output": 0,
@@ -206,7 +206,7 @@
         "WALL_FAILSAFE_HOLD"
       ],
       "output_csv": "sim\\results\\full_logical_wall_S08_stale_sensor_on_wall.csv",
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
@@ -231,7 +231,7 @@
         "WALL_FAILSAFE_HOLD"
       ],
       "output_csv": "sim\\results\\full_logical_wall_S09_transition_timeout.csv",
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1100,
       "max_hardware_suction_output": 0,
@@ -252,7 +252,7 @@
         "SUCTION_LOCKOUT"
       ],
       "output_csv": "sim\\results\\full_guard_S10_suction_unverified_lockout.csv",
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 0,
       "max_hardware_suction_output": 0,
@@ -278,7 +278,7 @@
         "WALL_FAILSAFE_HOLD"
       ],
       "output_csv": "sim\\results\\full_logical_wall_S11_encoder_dropout.csv",
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
@@ -304,7 +304,7 @@
         "WALL_FAILSAFE_HOLD"
       ],
       "output_csv": "sim\\results\\full_logical_wall_S12_emag_loss.csv",
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
@@ -330,7 +330,7 @@
         "WALL_FAILSAFE_HOLD"
       ],
       "output_csv": "sim\\results\\full_logical_wall_S13_imu_abnormal.csv",
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
@@ -376,7 +376,7 @@
         "FINISHED"
       ],
       "output_csv": "sim\\results\\full_logical_wall_S15_finished_steering_centered.csv",
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
@@ -397,7 +397,7 @@
         "HARD_FAULT"
       ],
       "output_csv": "sim\\results\\full_guard_S16_illegal_state_hard_fault.csv",
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 0,
       "max_hardware_suction_output": 0,
@@ -425,7 +425,7 @@
         "WALL_FAILSAFE_HOLD"
       ],
       "output_csv": "sim\\results\\full_logical_wall_S17_transition_down_no_rebound_up.csv",
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
@@ -445,7 +445,7 @@
         "GROUND_TRACK"
       ],
       "output_csv": "sim\\results\\full_guard_S18_single_frame_imu_spike_rejection.csv",
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 0,
       "max_hardware_suction_output": 0,
@@ -471,8 +471,8 @@
         "HARD_FAULT"
       ],
       "output_csv": "sim\\results\\full_logical_wall_S19_kill_overrides_all_outputs.csv",
-      "max_speed_cmd": 500,
-      "max_steering_cmd": 22,
+      "max_speed_cmd": 145,
+      "max_steering_cmd": 7,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
       "fault_state": "HARD_FAULT"
@@ -492,7 +492,7 @@
         "GROUND_FAULT"
       ],
       "output_csv": "sim\\results\\full_guard_S20_control_period_overrun_fault.csv",
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 0,
       "max_hardware_suction_output": 0,

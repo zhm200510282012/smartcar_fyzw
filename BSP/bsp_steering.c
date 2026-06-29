@@ -10,18 +10,25 @@ static u16 g_steering_pulse_us;
 static u16 g_steering_left_pulse_us;
 static u16 g_steering_right_pulse_us;
 
-static u16 clamp_pulse(u16 pulse_us)
+static u16 clamp_left_pulse(u16 pulse_us)
 {
-    if (pulse_us < STEERING_MIN_PULSE_US) return STEERING_MIN_PULSE_US;
-    if (pulse_us > STEERING_MAX_PULSE_US) return STEERING_MAX_PULSE_US;
+    if (pulse_us < STEERING_LEFT_MIN_US) return STEERING_LEFT_MIN_US;
+    if (pulse_us > STEERING_LEFT_MAX_US) return STEERING_LEFT_MAX_US;
+    return pulse_us;
+}
+
+static u16 clamp_right_pulse(u16 pulse_us)
+{
+    if (pulse_us < STEERING_RIGHT_MIN_US) return STEERING_RIGHT_MIN_US;
+    if (pulse_us > STEERING_RIGHT_MAX_US) return STEERING_RIGHT_MAX_US;
     return pulse_us;
 }
 
 #ifndef HOST_SIL
 static void steering_hw_disable_outputs(void)
 {
-    UpdatePwmCh(PWM1, STEERING_SAFE_CENTER_US);
-    UpdatePwmCh(PWM2, STEERING_SAFE_CENTER_US);
+    UpdatePwmCh(PWM1, STEERING_LEFT_CENTER_US);
+    UpdatePwmCh(PWM2, STEERING_RIGHT_CENTER_US);
     PWM1P_OUT_DIS();
     PWM2P_OUT_DIS();
 }
@@ -36,7 +43,7 @@ static void steering_hw_init(void)
     GPIO_Init(GPIO_P1, (u8)(GPIO_Pin_0 | GPIO_Pin_2), GPIO_Mode_Out_PP);
 
     pwm.PWM_Mode = CCMRn_PWM_MODE1;
-    pwm.PWM_Duty = STEERING_SAFE_CENTER_US;
+    pwm.PWM_Duty = STEERING_LEFT_CENTER_US;
     pwm.PWM_DeadTime = 0u;
     pwm.PWM_EnoSelect = ENO1P;
     pwm.PWM_CEN_Enable = ENABLE;
@@ -67,9 +74,10 @@ static void steering_hw_write(u16 left_pulse_us, u16 right_pulse_us)
 
 void bsp_steering_init(void)
 {
-    g_steering_pulse_us = STEERING_SAFE_CENTER_US;
-    g_steering_left_pulse_us = STEERING_SAFE_CENTER_US;
-    g_steering_right_pulse_us = STEERING_SAFE_CENTER_US;
+    g_steering_left_pulse_us = STEERING_LEFT_CENTER_US;
+    g_steering_right_pulse_us = STEERING_RIGHT_CENTER_US;
+    g_steering_pulse_us = (u16)(((u32)g_steering_left_pulse_us +
+                                 (u32)g_steering_right_pulse_us) / 2ul);
 #ifndef HOST_SIL
     steering_hw_init();
 #endif
@@ -83,16 +91,17 @@ void bsp_steering_apply(u16 steering_pulse_us)
 void bsp_steering_apply_pair(u16 left_pulse_us, u16 right_pulse_us)
 {
     if (BOARD_STEERING_VERIFIED == 0) {
-        g_steering_pulse_us = STEERING_SAFE_CENTER_US;
-        g_steering_left_pulse_us = STEERING_SAFE_CENTER_US;
-        g_steering_right_pulse_us = STEERING_SAFE_CENTER_US;
+        g_steering_left_pulse_us = STEERING_LEFT_CENTER_US;
+        g_steering_right_pulse_us = STEERING_RIGHT_CENTER_US;
+        g_steering_pulse_us = (u16)(((u32)g_steering_left_pulse_us +
+                                     (u32)g_steering_right_pulse_us) / 2ul);
 #ifndef HOST_SIL
         steering_hw_disable_outputs();
 #endif
         return;
     }
-    left_pulse_us = clamp_pulse(left_pulse_us);
-    right_pulse_us = clamp_pulse(right_pulse_us);
+    left_pulse_us = clamp_left_pulse(left_pulse_us);
+    right_pulse_us = clamp_right_pulse(right_pulse_us);
     g_steering_left_pulse_us = left_pulse_us;
     g_steering_right_pulse_us = right_pulse_us;
     g_steering_pulse_us = (u16)((left_pulse_us + right_pulse_us) / 2u);

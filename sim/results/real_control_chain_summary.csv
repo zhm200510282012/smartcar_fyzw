@@ -1,0 +1,11 @@
+scenario,pass,metric_a,metric_b,metric_c,notes
+S39,true,-833,0,833,five-channel centroid sign ok
+S40,true,1,0,0,low total energy marks line lost
+S41,true,12,0,6,left speed error only changes left pwm
+S42,true,0,12,6,right speed error only changes right pwm
+S43,true,12,260,3000,pi integral output and accel limits ok
+S44,true,0,0,0,encoder invalid zeros both drives
+S45,true,1610,1410,1510,dual servo signs applied
+S46,true,120,60,1590,arbitration preserves independent outputs
+S47,true,0,0,1510,safe states zero and center outputs
+S48,true,157,220,2,scheduler fuzzy steering path affects output

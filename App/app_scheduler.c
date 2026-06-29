@@ -35,8 +35,9 @@ static u32 g_last_health;
 static u32 g_last_ui;
 static track_mode_state_t g_track_mode_state;
 static ctrl_fuzzy_steering_state_t g_fuzzy_steering_state;
-static u8 g_line_filter_valid;
-static s16 g_prev_filtered_error;
+static line_filter_state_t g_line_filter_state;
+static speed_pi_state_t g_left_speed_pi;
+static speed_pi_state_t g_right_speed_pi;
 
 static u8 control_or_wall_active(app_state_t state)
 {
@@ -57,7 +58,7 @@ static void update_sensor_health(app_context_t *ctx, u32 now_ms)
 {
     u32 attitude_age_ms;
 
-    ctx->health.emag_ok = (ctx->emag.valid && ctx->emag.signal_quality >= LINE_QUALITY_MIN);
+    ctx->health.emag_ok = (ctx->emag.valid && ctx->emag.line_lost == APP_FALSE && ctx->emag.line_quality >= LINE_QUALITY_MIN);
     if (ctx->attitude.fresh && now_ms >= ctx->attitude.timestamp_ms) {
         attitude_age_ms = now_ms - ctx->attitude.timestamp_ms;
         ctx->health.imu_fresh = (attitude_age_ms <= SENSOR_STALE_TIMEOUT_MS);
@@ -123,32 +124,19 @@ void app_scheduler_init(void)
     g_last_track = 0ul;
     g_last_health = 0ul;
     g_last_ui = 0ul;
-    g_line_filter_valid = APP_FALSE;
-    g_prev_filtered_error = 0;
+    ctrl_line_filter_init(&g_line_filter_state);
+    ctrl_speed_pi_init(&g_left_speed_pi);
+    ctrl_speed_pi_init(&g_right_speed_pi);
     track_route_profile_init(&g_track_mode_state);
     ctrl_fuzzy_steering_init(&g_fuzzy_steering_state);
 }
 
 static void update_line_error_terms(app_context_t *ctx)
 {
-    s16 filtered;
-    if (ctx->emag.valid == APP_FALSE || ctx->emag.signal_quality < LINE_QUALITY_MIN) {
-        ctx->line_error_filtered = 0;
-        ctx->line_error_rate = 0;
-        g_line_filter_valid = APP_FALSE;
-        g_prev_filtered_error = 0;
-        return;
-    }
-
-    if (g_line_filter_valid == APP_FALSE) {
-        filtered = ctx->emag.line_error;
-        g_line_filter_valid = APP_TRUE;
-    } else {
-        filtered = (s16)((((s32)g_prev_filtered_error * 3l) + (s32)ctx->emag.line_error) / 4l);
-    }
-    ctx->line_error_filtered = filtered;
-    ctx->line_error_rate = (s16)(filtered - g_prev_filtered_error);
-    g_prev_filtered_error = filtered;
+    ctrl_line_filter_update(&g_line_filter_state,
+                            &ctx->emag,
+                            &ctx->line_error_filtered,
+                            &ctx->line_error_rate);
 }
 
 static void update_track_mode(app_context_t *ctx)
@@ -158,7 +146,7 @@ static void update_track_mode(app_context_t *ctx)
 
     input.line_error = ctx->line_error_filtered;
     input.error_rate = ctx->line_error_rate;
-    input.line_quality = ctx->emag.signal_quality;
+    input.line_quality = ctx->emag.line_quality;
     input.surface_state = ctx->surface_state;
     input.pitch_cdeg = ctx->attitude.pitch_cdeg;
     input.pitch_rate_cdeg_s = 0;
@@ -186,7 +174,7 @@ static void update_fuzzy_steering(app_context_t *ctx)
     input.app_state = ctx->app_state;
     input.line_error_filtered = ctx->line_error_filtered;
     input.error_rate = ctx->line_error_rate;
-    input.signal_quality = ctx->emag.signal_quality;
+    input.signal_quality = ctx->emag.line_quality;
     input.dt_ms = TASK_CONTROL_PERIOD_MS;
     input.outputs_allowed = app_safety_outputs_allowed(ctx);
 
@@ -201,7 +189,7 @@ static void reset_fuzzy_if_blocked(app_context_t *ctx)
 {
     if (ctrl_fuzzy_steering_needs_reset(ctx->app_state,
                                         ctx->track_mode,
-                                        ctx->emag.signal_quality,
+                                        ctx->emag.line_quality,
                                         app_safety_outputs_allowed(ctx)) != APP_FALSE) {
         ctrl_fuzzy_steering_reset(&g_fuzzy_steering_state);
         ctx->fuzzy_kp = g_fuzzy_steering_state.gain.kp;
@@ -225,6 +213,7 @@ void app_scheduler_run_due(app_context_t *ctx, u32 now_ms)
 
     if ((now_ms - g_last_control) >= TASK_CONTROL_PERIOD_MS) {
         s16 target_speed_mm_s;
+        speed_pi_output_t speed_output;
         u8 feature_transition;
 
         g_last_control = now_ms;
@@ -254,7 +243,18 @@ void app_scheduler_run_due(app_context_t *ctx, u32 now_ms)
         ctx->target_speed_mm_s = target_speed_mm_s;
         ctx->left_speed_target_mm_s = target_speed_mm_s;
         ctx->right_speed_target_mm_s = target_speed_mm_s;
-        ctx->drive_command_native = ctrl_speed_command_native(target_speed_mm_s, ctx->encoder);
+        if (ctx->encoder.valid == APP_FALSE || app_safety_outputs_allowed(ctx) == APP_FALSE) {
+            ctrl_speed_pi_reset(&g_left_speed_pi);
+            ctrl_speed_pi_reset(&g_right_speed_pi);
+        }
+        speed_output = ctrl_speed_update_pair(&g_left_speed_pi,
+                                              &g_right_speed_pi,
+                                              ctx->left_speed_target_mm_s,
+                                              ctx->right_speed_target_mm_s,
+                                              ctx->encoder);
+        ctx->left_drive_command_native = speed_output.left_native;
+        ctx->right_drive_command_native = speed_output.right_native;
+        ctx->drive_command_native = speed_output.average_native;
         update_fuzzy_steering(ctx);
         ctrl_vehicle_update(ctx);
         ctrl_adhesion_update(ctx);

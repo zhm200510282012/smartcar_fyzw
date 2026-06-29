@@ -38,7 +38,7 @@ telemetry_frame_t app_telemetry_make_frame(const app_context_t *ctx, u32 now_ms)
     t.line_error = ctx->emag.line_error;
     t.line_error_filtered = ctx->line_error_filtered;
     t.error_rate = ctx->line_error_rate;
-    t.signal_quality = ctx->emag.signal_quality;
+    t.signal_quality = ctx->emag.line_quality;
     t.drive_command_native = ctx->drive_command_native;
     t.steering_offset_us = ctx->steering_offset_us;
     t.steering_pulse_us = ctx->steering_pulse_us;

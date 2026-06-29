@@ -1,17 +1,108 @@
 #include "ctrl_line.h"
 
+static const s16 g_line_weights[5] = {
+    -2, -1, 0, 1, 2
+};
+
+static void mark_lost(emag_sample_t *sample)
+{
+    sample->line_error = 0;
+    sample->line_quality = 0u;
+    sample->signal_quality = 0u;
+    sample->line_lost = APP_TRUE;
+    sample->valid = APP_FALSE;
+}
+
 emag_sample_t ctrl_line_update(emag_sample_t input)
 {
-    u16 left;
-    u16 right;
-    if (input.channel_count < 2u || input.valid == APP_FALSE) {
-        input.signal_quality = 0u;
-        input.line_error = 0;
+    u8 i;
+    u32 sum;
+    s32 weighted;
+    s32 error;
+
+    if (input.channel_count < 5u || input.valid == APP_FALSE) {
+        mark_lost(&input);
         return input;
     }
-    left = input.norm[0];
-    right = input.norm[input.channel_count - 1u];
-    input.line_error = (s16)right - (s16)left;
-    input.signal_quality = (u16)(left + right);
+
+    sum = 0ul;
+    weighted = 0l;
+    for (i = 0u; i < 5u; i++) {
+        sum += (u32)input.norm[i];
+        weighted += (s32)g_line_weights[i] * (s32)input.norm[i];
+    }
+
+    if (sum < LINE_VALID_SUM_MIN) {
+        mark_lost(&input);
+        return input;
+    }
+
+    error = (weighted * (s32)LINE_WEIGHT_SCALE) / (s32)sum;
+#if LINE_DIRECTION_SIGN < 0
+    error = -error;
+#endif
+    if (error > 32767l) error = 32767l;
+    if (error < -32768l) error = -32768l;
+    input.line_error = (s16)error;
+    input.line_quality = (u16)sum;
+    input.signal_quality = input.line_quality;
+    input.line_lost = APP_FALSE;
+    input.valid = APP_TRUE;
     return input;
+}
+
+void ctrl_line_filter_init(line_filter_state_t *state)
+{
+    if (state == 0) {
+        return;
+    }
+    state->valid = APP_FALSE;
+    state->previous_filtered = 0;
+}
+
+void ctrl_line_filter_reset(line_filter_state_t *state)
+{
+    ctrl_line_filter_init(state);
+}
+
+void ctrl_line_filter_update(line_filter_state_t *state,
+                             const emag_sample_t *sample,
+                             s16 *filtered_error,
+                             s16 *error_rate)
+{
+    s16 filtered;
+    s16 previous;
+    s32 accum;
+
+    if (filtered_error != 0) {
+        *filtered_error = 0;
+    }
+    if (error_rate != 0) {
+        *error_rate = 0;
+    }
+    if (state == 0 || sample == 0) {
+        return;
+    }
+    if (sample->valid == APP_FALSE || sample->line_lost != APP_FALSE) {
+        ctrl_line_filter_reset(state);
+        return;
+    }
+
+    previous = state->previous_filtered;
+    if (state->valid == APP_FALSE) {
+        filtered = sample->line_error;
+        state->valid = APP_TRUE;
+    } else {
+        accum = ((s32)previous * (s32)LINE_FILTER_ALPHA) +
+                ((s32)sample->line_error * (s32)(LINE_FILTER_DENOM - LINE_FILTER_ALPHA));
+        filtered = (s16)(accum / (s32)LINE_FILTER_DENOM);
+    }
+
+    if (filtered_error != 0) {
+        *filtered_error = filtered;
+    }
+    if (error_rate != 0) {
+        *error_rate = (s16)(filtered - previous);
+    }
+    state->previous_filtered = filtered;
 }

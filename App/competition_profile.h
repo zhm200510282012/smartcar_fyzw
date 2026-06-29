@@ -1,0 +1,54 @@
+#ifndef COMPETITION_PROFILE_H
+#define COMPETITION_PROFILE_H
+
+/* User-facing competition tuning profile. Keep bench defaults conservative. */
+
+#define LINE_DIRECTION_SIGN 1
+#define LINE_WEIGHT_SCALE 500
+#define LINE_VALID_SUM_MIN 160u
+#define LINE_LOST_QUALITY_MIN 200u
+#define LINE_FILTER_ALPHA 3
+#define LINE_FILTER_DENOM 4
+
+#define STEERING_LEFT_CENTER_US 1510u
+#define STEERING_RIGHT_CENTER_US 1510u
+#define STEERING_LEFT_MIN_US 1000u
+#define STEERING_LEFT_MAX_US 2000u
+#define STEERING_RIGHT_MIN_US 1000u
+#define STEERING_RIGHT_MAX_US 2000u
+#define STEERING_LEFT_SIGN 1
+#define STEERING_RIGHT_SIGN -1
+
+#define SPEED_KP 32
+#define SPEED_KI 4
+#define SPEED_INTEGRAL_LIMIT 3000l
+#define SPEED_OUTPUT_LIMIT 260
+#define SPEED_ACCEL_LIMIT 12
+
+#define GROUND_STEERING_KP 115
+#define GROUND_STEERING_KD 70
+#define FUZZY_ENABLE 0
+
+#define GROUND_STRAIGHT_SPEED_MM_S 180
+#define GROUND_CURVE_SPEED_MM_S 140
+#define SHARP_CURVE_SPEED_MM_S 95
+#define TRANSITION_SPEED_MM_S 70
+#define WALL_SPEED_MM_S 80
+
+#if (LINE_DIRECTION_SIGN != 1) && (LINE_DIRECTION_SIGN != -1)
+#error LINE_DIRECTION_SIGN must be +1 or -1.
+#endif
+
+#if (STEERING_LEFT_SIGN != 1) && (STEERING_LEFT_SIGN != -1)
+#error STEERING_LEFT_SIGN must be +1 or -1.
+#endif
+
+#if (STEERING_RIGHT_SIGN != 1) && (STEERING_RIGHT_SIGN != -1)
+#error STEERING_RIGHT_SIGN must be +1 or -1.
+#endif
+
+#if (FUZZY_ENABLE != 0) && (FUZZY_ENABLE != 1)
+#error FUZZY_ENABLE must be 0 or 1.
+#endif
+
+#endif

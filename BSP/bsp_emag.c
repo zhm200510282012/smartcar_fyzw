@@ -14,8 +14,10 @@ emag_sample_t bsp_emag_read(void)
         s.norm[i] = 0u;
     }
     s.line_error = 0;
+    s.line_quality = 0u;
     s.signal_quality = 0u;
     s.channel_count = 0u;
+    s.line_lost = APP_TRUE;
     s.valid = APP_FALSE;
     return s;
 }

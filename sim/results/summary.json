@@ -34,7 +34,7 @@
         "ARMED_GROUND",
         "GROUND_TRACK"
       ],
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 0,
       "max_hardware_suction_output": 0,
@@ -54,8 +54,8 @@
         "ARMED_GROUND",
         "GROUND_TRACK"
       ],
-      "max_speed_cmd": 500,
-      "max_steering_cmd": 28,
+      "max_speed_cmd": 145,
+      "max_steering_cmd": 9,
       "max_logical_suction_request": 0,
       "max_hardware_suction_output": 0,
       "fault_state": ""
@@ -79,7 +79,7 @@
         "TRANSITION_UP",
         "WALL_TRACK"
       ],
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
@@ -104,7 +104,7 @@
         "TRANSITION_UP",
         "WALL_TRACK"
       ],
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
@@ -132,7 +132,7 @@
         "GROUND_RECOVERY",
         "FINISHED"
       ],
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
@@ -157,8 +157,8 @@
         "TRANSITION_UP",
         "WALL_TRACK"
       ],
-      "max_speed_cmd": 500,
-      "max_steering_cmd": 22,
+      "max_speed_cmd": 145,
+      "max_steering_cmd": 7,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
       "fault_state": ""
@@ -178,7 +178,7 @@
         "GROUND_TRACK",
         "GROUND_FAULT"
       ],
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 0,
       "max_hardware_suction_output": 0,
@@ -204,7 +204,7 @@
         "WALL_TRACK",
         "WALL_FAILSAFE_HOLD"
       ],
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
@@ -229,7 +229,7 @@
         "TRANSITION_UP",
         "WALL_FAILSAFE_HOLD"
       ],
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1100,
       "max_hardware_suction_output": 0,
@@ -250,7 +250,7 @@
         "GROUND_TRACK",
         "SUCTION_LOCKOUT"
       ],
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 0,
       "max_hardware_suction_output": 0,
@@ -276,7 +276,7 @@
         "WALL_TRACK",
         "WALL_FAILSAFE_HOLD"
       ],
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
@@ -302,7 +302,7 @@
         "WALL_TRACK",
         "WALL_FAILSAFE_HOLD"
       ],
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
@@ -328,7 +328,7 @@
         "WALL_TRACK",
         "WALL_FAILSAFE_HOLD"
       ],
-      "max_speed_cmd": 500,
+      "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,

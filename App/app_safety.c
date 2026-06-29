@@ -40,24 +40,39 @@ void app_safety_apply_profile(app_context_t *ctx, safety_profile_t profile)
     if (profile == SAFETY_PROFILE_GROUND_FAULT) {
         /* GROUND_FAULT: drive zero, steering safe, suction off or cooldown. */
         ctx->drive_command_native = DRIVE_SAFE_ZERO;
+        ctx->left_drive_command_native = DRIVE_SAFE_ZERO;
+        ctx->right_drive_command_native = DRIVE_SAFE_ZERO;
         ctx->steering_offset_us = 0;
-        ctx->steering_pulse_us = STEERING_SAFE_CENTER_US;
+        ctx->steering_left_pulse_us = STEERING_LEFT_CENTER_US;
+        ctx->steering_right_pulse_us = STEERING_RIGHT_CENTER_US;
+        ctx->steering_pulse_us = (u16)(((u32)ctx->steering_left_pulse_us +
+                                        (u32)ctx->steering_right_pulse_us) / 2ul);
         ctx->suction_cmd.mode = SUCTION_OFF;
         ctx->suction_cmd.command_native = SUCTION_SAFE_OFF_NATIVE;
         ctx->app_state = APP_STATE_GROUND_FAULT;
     } else if (profile == SAFETY_PROFILE_WALL_OR_UNKNOWN_FAULT) {
         /* WALL_OR_UNKNOWN_FAULT: drive zero, steering safe, request emergency hold. */
         ctx->drive_command_native = DRIVE_SAFE_ZERO;
+        ctx->left_drive_command_native = DRIVE_SAFE_ZERO;
+        ctx->right_drive_command_native = DRIVE_SAFE_ZERO;
         ctx->steering_offset_us = 0;
-        ctx->steering_pulse_us = STEERING_SAFE_CENTER_US;
+        ctx->steering_left_pulse_us = STEERING_LEFT_CENTER_US;
+        ctx->steering_right_pulse_us = STEERING_RIGHT_CENTER_US;
+        ctx->steering_pulse_us = (u16)(((u32)ctx->steering_left_pulse_us +
+                                        (u32)ctx->steering_right_pulse_us) / 2ul);
         ctx->suction_cmd.mode = SUCTION_EMERGENCY_HOLD;
         ctx->suction_cmd.command_native = SUCTION_EMERGENCY_HOLD_NATIVE;
         ctx->app_state = APP_STATE_WALL_FAILSAFE_HOLD;
     } else if (profile == SAFETY_PROFILE_SUCTION_LOCKOUT) {
         /* SUCTION_LOCKOUT: expected refusal before any wall-related state. */
         ctx->drive_command_native = DRIVE_SAFE_ZERO;
+        ctx->left_drive_command_native = DRIVE_SAFE_ZERO;
+        ctx->right_drive_command_native = DRIVE_SAFE_ZERO;
         ctx->steering_offset_us = 0;
-        ctx->steering_pulse_us = STEERING_SAFE_CENTER_US;
+        ctx->steering_left_pulse_us = STEERING_LEFT_CENTER_US;
+        ctx->steering_right_pulse_us = STEERING_RIGHT_CENTER_US;
+        ctx->steering_pulse_us = (u16)(((u32)ctx->steering_left_pulse_us +
+                                        (u32)ctx->steering_right_pulse_us) / 2ul);
         ctx->suction_cmd.mode = SUCTION_OFF;
         ctx->suction_cmd.command_native = SUCTION_SAFE_OFF_NATIVE;
         ctx->suction_cmd.armed = APP_FALSE;
@@ -68,8 +83,13 @@ void app_safety_apply_profile(app_context_t *ctx, safety_profile_t profile)
     } else if (profile == SAFETY_PROFILE_HARD_POWER_OR_THERMAL_FAULT) {
         /* HARD_POWER_OR_THERMAL_FAULT: protect electrical system first. */
         ctx->drive_command_native = DRIVE_SAFE_ZERO;
+        ctx->left_drive_command_native = DRIVE_SAFE_ZERO;
+        ctx->right_drive_command_native = DRIVE_SAFE_ZERO;
         ctx->steering_offset_us = 0;
-        ctx->steering_pulse_us = STEERING_SAFE_CENTER_US;
+        ctx->steering_left_pulse_us = STEERING_LEFT_CENTER_US;
+        ctx->steering_right_pulse_us = STEERING_RIGHT_CENTER_US;
+        ctx->steering_pulse_us = (u16)(((u32)ctx->steering_left_pulse_us +
+                                        (u32)ctx->steering_right_pulse_us) / 2ul);
         ctx->suction_cmd.mode = SUCTION_OFF;
         ctx->suction_cmd.command_native = SUCTION_SAFE_OFF_NATIVE;
         ctx->app_state = APP_STATE_HARD_FAULT;

@@ -103,8 +103,10 @@ s16 ctrl_fuzzy_steering_update(ctrl_fuzzy_steering_state_t *state,
 {
     const track_mode_params_t *params;
     fuzzy_pid_base_t base;
+#if FUZZY_ENABLE != 0
     s16 e_norm;
     s16 de_norm;
+#endif
     s32 output;
     s32 integral;
     s16 limited;
@@ -140,9 +142,18 @@ s16 ctrl_fuzzy_steering_update(ctrl_fuzzy_steering_state_t *state,
     if (state->gain_valid == APP_FALSE ||
         state->fuzzy_elapsed_ms >= FUZZY_UPDATE_PERIOD_MS) {
         base = base_from_mode_params(params);
+#if FUZZY_ENABLE == 0
+        state->gain.kp = base.base_kp;
+        state->gain.ki = base.base_ki;
+        state->gain.kd = base.base_kd;
+        state->adjust.dkp = 0;
+        state->adjust.dki = 0;
+        state->adjust.dkd = 0;
+#else
         e_norm = ctrl_fuzzy_pid_normalize(input->line_error_filtered, FUZZY_E_SCALE);
         de_norm = ctrl_fuzzy_pid_normalize(input->error_rate, FUZZY_DE_SCALE);
         ctrl_fuzzy_pid_eval(e_norm, de_norm, &base, &state->gain, &state->adjust);
+#endif
         state->fuzzy_elapsed_ms = 0u;
         state->gain_valid = APP_TRUE;
     }

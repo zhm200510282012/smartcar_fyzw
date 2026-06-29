@@ -72,9 +72,10 @@ void app_state_machine_init(app_context_t *ctx)
     ctx->fuzzy_ki = FUZZY_STRAIGHT_BASE_KI;
     ctx->fuzzy_kd = FUZZY_STRAIGHT_BASE_KD;
     ctx->steering_offset_us = 0;
-    ctx->steering_pulse_us = STEERING_SAFE_CENTER_US;
-    ctx->steering_left_pulse_us = STEERING_SAFE_CENTER_US;
-    ctx->steering_right_pulse_us = STEERING_SAFE_CENTER_US;
+    ctx->steering_left_pulse_us = STEERING_LEFT_CENTER_US;
+    ctx->steering_right_pulse_us = STEERING_RIGHT_CENTER_US;
+    ctx->steering_pulse_us = (u16)(((u32)ctx->steering_left_pulse_us +
+                                    (u32)ctx->steering_right_pulse_us) / 2ul);
     ctx->suction_cmd.mode = SUCTION_OFF;
     ctx->suction_cmd.command_native = SUCTION_SAFE_OFF_NATIVE;
     ctx->suction_cmd.armed = APP_FALSE;
@@ -82,6 +83,9 @@ void app_state_machine_init(app_context_t *ctx)
     ctx->suction_cmd.feedback_valid = APP_FALSE;
     ctx->suction_cmd.fault_code = FAULT_NONE;
     ctx->emag.channel_count = 0u;
+    ctx->emag.line_quality = 0u;
+    ctx->emag.signal_quality = 0u;
+    ctx->emag.line_lost = APP_TRUE;
     ctx->emag.valid = APP_FALSE;
     ctx->attitude.fresh = APP_FALSE;
     ctx->attitude.id_ok = APP_FALSE;

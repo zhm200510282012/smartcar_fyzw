@@ -53,14 +53,24 @@ static int parse_input_line(const char *line, host_sil_input_t *input)
     int kill_switch;
     int control_period_ok;
     int force_app_state;
+    unsigned int emag_norm0;
+    unsigned int emag_norm1;
+    unsigned int emag_norm2;
+    unsigned int emag_norm3;
+    unsigned int emag_norm4;
     int parsed;
 
     imu_id_ok = 1;
     kill_switch = 0;
     control_period_ok = 1;
     force_app_state = -1;
+    emag_norm0 = 0u;
+    emag_norm1 = 0u;
+    emag_norm2 = 0u;
+    emag_norm3 = 0u;
+    emag_norm4 = 0u;
     parsed = sscanf(line,
-                    "%lu,%d,%d,%d,%d,%d,%u,%d,%d,%d,%ld,%ld,%d,%d,%d,%d,%d,%d,%d",
+                    "%lu,%d,%d,%d,%d,%d,%u,%d,%d,%d,%ld,%ld,%d,%d,%d,%d,%d,%d,%d,%u,%u,%u,%u,%u",
                     &time_ms,
                     &manual_arm,
                     &suction_authorize,
@@ -79,7 +89,12 @@ static int parse_input_line(const char *line, host_sil_input_t *input)
                     &imu_id_ok,
                     &kill_switch,
                     &control_period_ok,
-                    &force_app_state);
+                    &force_app_state,
+                    &emag_norm0,
+                    &emag_norm1,
+                    &emag_norm2,
+                    &emag_norm3,
+                    &emag_norm4);
     if (parsed < 15) {
         return 0;
     }
@@ -91,6 +106,21 @@ static int parse_input_line(const char *line, host_sil_input_t *input)
     input->emag_valid = emag_valid ? APP_TRUE : APP_FALSE;
     input->line_error = (s16)line_error;
     input->signal_quality = (u16)signal_quality;
+    if (parsed >= 24) {
+        input->emag_norm_valid = APP_TRUE;
+        input->emag_norm[0] = (u16)emag_norm0;
+        input->emag_norm[1] = (u16)emag_norm1;
+        input->emag_norm[2] = (u16)emag_norm2;
+        input->emag_norm[3] = (u16)emag_norm3;
+        input->emag_norm[4] = (u16)emag_norm4;
+    } else {
+        input->emag_norm_valid = APP_FALSE;
+        input->emag_norm[0] = 0u;
+        input->emag_norm[1] = 0u;
+        input->emag_norm[2] = 0u;
+        input->emag_norm[3] = 0u;
+        input->emag_norm[4] = 0u;
+    }
     input->imu_fresh = imu_fresh ? APP_TRUE : APP_FALSE;
     input->imu_id_ok = imu_id_ok ? APP_TRUE : APP_FALSE;
     input->pitch_cdeg = (s16)pitch_cdeg;

@@ -9,10 +9,17 @@ static s16 clamp_drive(s16 value)
     return value;
 }
 
-static u16 clamp_steering(u16 value)
+static u16 clamp_steering_left(u16 value)
 {
-    if (value < STEERING_MIN_PULSE_US) return STEERING_MIN_PULSE_US;
-    if (value > STEERING_MAX_PULSE_US) return STEERING_MAX_PULSE_US;
+    if (value < STEERING_LEFT_MIN_US) return STEERING_LEFT_MIN_US;
+    if (value > STEERING_LEFT_MAX_US) return STEERING_LEFT_MAX_US;
+    return value;
+}
+
+static u16 clamp_steering_right(u16 value)
+{
+    if (value < STEERING_RIGHT_MIN_US) return STEERING_RIGHT_MIN_US;
+    if (value > STEERING_RIGHT_MAX_US) return STEERING_RIGHT_MAX_US;
     return value;
 }
 
@@ -54,9 +61,10 @@ void app_output_arbitrate(app_context_t *ctx)
         ctx->left_drive_command_native = DRIVE_SAFE_ZERO;
         ctx->right_drive_command_native = DRIVE_SAFE_ZERO;
         ctx->steering_offset_us = 0;
-        ctx->steering_pulse_us = STEERING_SAFE_CENTER_US;
-        ctx->steering_left_pulse_us = STEERING_SAFE_CENTER_US;
-        ctx->steering_right_pulse_us = STEERING_SAFE_CENTER_US;
+        ctx->steering_left_pulse_us = STEERING_LEFT_CENTER_US;
+        ctx->steering_right_pulse_us = STEERING_RIGHT_CENTER_US;
+        ctx->steering_pulse_us = (u16)(((u32)ctx->steering_left_pulse_us +
+                                        (u32)ctx->steering_right_pulse_us) / 2ul);
         if (suction_must_be_off(ctx) != APP_FALSE) {
             ctx->suction_cmd.mode = SUCTION_OFF;
             ctx->suction_cmd.command_native = SUCTION_SAFE_OFF_NATIVE;
@@ -65,10 +73,12 @@ void app_output_arbitrate(app_context_t *ctx)
         return;
     }
 
-    ctx->drive_command_native = clamp_drive(ctx->drive_command_native);
-    ctx->left_drive_command_native = ctx->drive_command_native;
-    ctx->right_drive_command_native = ctx->drive_command_native;
-    ctx->steering_pulse_us = clamp_steering(ctx->steering_pulse_us);
-    ctx->steering_left_pulse_us = ctx->steering_pulse_us;
-    ctx->steering_right_pulse_us = ctx->steering_pulse_us;
+    ctx->left_drive_command_native = clamp_drive(ctx->left_drive_command_native);
+    ctx->right_drive_command_native = clamp_drive(ctx->right_drive_command_native);
+    ctx->drive_command_native = (s16)(((s32)ctx->left_drive_command_native +
+                                       (s32)ctx->right_drive_command_native) / 2l);
+    ctx->steering_left_pulse_us = clamp_steering_left(ctx->steering_left_pulse_us);
+    ctx->steering_right_pulse_us = clamp_steering_right(ctx->steering_right_pulse_us);
+    ctx->steering_pulse_us = (u16)(((u32)ctx->steering_left_pulse_us +
+                                    (u32)ctx->steering_right_pulse_us) / 2ul);
 }

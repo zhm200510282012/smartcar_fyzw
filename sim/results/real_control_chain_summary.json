@@ -1,0 +1,83 @@
+{
+  "scenario_count": 10,
+  "passed": 10,
+  "failed": 0,
+  "scenarios": {
+    "S39": {
+      "pass": true,
+      "metric_a": -833,
+      "metric_b": 0,
+      "metric_c": 833,
+      "notes": "five-channel centroid sign ok"
+    },
+    "S40": {
+      "pass": true,
+      "metric_a": 1,
+      "metric_b": 0,
+      "metric_c": 0,
+      "notes": "low total energy marks line lost"
+    },
+    "S41": {
+      "pass": true,
+      "metric_a": 12,
+      "metric_b": 0,
+      "metric_c": 6,
+      "notes": "left speed error only changes left pwm"
+    },
+    "S42": {
+      "pass": true,
+      "metric_a": 0,
+      "metric_b": 12,
+      "metric_c": 6,
+      "notes": "right speed error only changes right pwm"
+    },
+    "S43": {
+      "pass": true,
+      "metric_a": 12,
+      "metric_b": 260,
+      "metric_c": 3000,
+      "notes": "pi integral output and accel limits ok"
+    },
+    "S44": {
+      "pass": true,
+      "metric_a": 0,
+      "metric_b": 0,
+      "metric_c": 0,
+      "notes": "encoder invalid zeros both drives"
+    },
+    "S45": {
+      "pass": true,
+      "metric_a": 1610,
+      "metric_b": 1410,
+      "metric_c": 1510,
+      "notes": "dual servo signs applied"
+    },
+    "S46": {
+      "pass": true,
+      "metric_a": 120,
+      "metric_b": 60,
+      "metric_c": 1590,
+      "notes": "arbitration preserves independent outputs"
+    },
+    "S47": {
+      "pass": true,
+      "metric_a": 0,
+      "metric_b": 0,
+      "metric_c": 1510,
+      "notes": "safe states zero and center outputs"
+    },
+    "S48": {
+      "pass": true,
+      "metric_a": 157,
+      "metric_b": 220,
+      "metric_c": 2,
+      "notes": "scheduler fuzzy steering path affects output"
+    }
+  },
+  "safety": {
+    "suction_hw_verified": 0,
+    "hardware_suction_output_max": 0,
+    "real_bench_pass": false,
+    "real_wall_pass": false
+  }
+}

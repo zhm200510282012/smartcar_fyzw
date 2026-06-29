@@ -99,8 +99,10 @@ typedef struct {
     u16 filtered[5];
     u16 norm[5];
     s16 line_error;
+    u16 line_quality;
     u16 signal_quality;
     u8 channel_count;
+    u8 line_lost;
     u8 valid;
 } emag_sample_t;
 
