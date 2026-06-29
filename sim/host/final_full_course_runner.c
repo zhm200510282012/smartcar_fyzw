@@ -165,7 +165,7 @@ static void set_full_route_input(host_sil_input_t *input, u32 t, u8 finish_after
     if (t >= 650ul && t < 1500ul) {
         input->route_event.wall_approach_event = APP_TRUE;
     }
-    if (finish_after_recovery != APP_FALSE && t >= 3300ul) {
+    if (finish_after_recovery != APP_FALSE && t >= 2450ul) {
         input->route_event.finish_event = APP_TRUE;
     }
     input->pitch_cdeg = full_route_pitch_for(t);

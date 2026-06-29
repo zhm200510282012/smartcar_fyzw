@@ -90,12 +90,12 @@ track_course_segment_t track_full_course_profile_update(track_full_course_profil
 
     if (input->app_state < APP_STATE_GROUND_TRACK) {
         segment = TRACK_COURSE_START;
-    } else if (input->app_state == APP_STATE_FINISHED ||
-               input->route_event.finish_event != APP_FALSE) {
-        segment = TRACK_COURSE_FINISH;
     } else if (input->wall_state != TRACK_WALL_GROUND_TRACK &&
                input->wall_state != TRACK_WALL_FAILSAFE_HOLD) {
         segment = segment_from_wall_state(input->wall_state);
+    } else if (input->app_state == APP_STATE_FINISHED ||
+               input->route_event.finish_event != APP_FALSE) {
+        segment = TRACK_COURSE_FINISH;
     } else if (input->route_event.wall_approach_event != APP_FALSE) {
         segment = TRACK_COURSE_WALL_APPROACH;
     } else if (input->route_event.crossing_event != APP_FALSE) {

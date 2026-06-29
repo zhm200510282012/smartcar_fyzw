@@ -69,8 +69,16 @@ static encoder_sample_t make_encoder(s16 left_speed, s16 right_speed, u8 valid)
     encoder_sample_t encoder;
     encoder.left_count = 0l;
     encoder.right_count = 0l;
+    encoder.left_delta_counts = left_speed;
+    encoder.right_delta_counts = right_speed;
+    encoder.left_speed_counts_per_s = left_speed;
+    encoder.right_speed_counts_per_s = right_speed;
     encoder.left_speed_mm_s = left_speed;
     encoder.right_speed_mm_s = right_speed;
+    encoder.left_distance_mm = 0l;
+    encoder.right_distance_mm = 0l;
+    encoder.speed_mm_s_valid = APP_TRUE;
+    encoder.progress_mm_valid = APP_TRUE;
     encoder.valid = valid;
     return encoder;
 }
@@ -80,8 +88,17 @@ static attitude_sample_t make_attitude(s16 pitch_cdeg, u8 fresh)
     attitude_sample_t attitude;
     attitude.roll_cdeg = 0;
     attitude.pitch_cdeg = pitch_cdeg;
+    attitude.pitch_rate_cdeg_s = 0;
     attitude.yaw_rate_cdeg_s = 0;
+    attitude.accel_raw[0] = 0;
+    attitude.accel_raw[1] = 0;
+    attitude.accel_raw[2] = 16384;
+    attitude.gyro_raw[0] = 0;
+    attitude.gyro_raw[1] = 0;
+    attitude.gyro_raw[2] = 0;
     attitude.timestamp_ms = 0ul;
+    attitude.spi_ok = APP_TRUE;
+    attitude.who_am_i = 0x6Bu;
     attitude.id_ok = APP_TRUE;
     attitude.fresh = fresh;
     return attitude;
@@ -296,12 +313,12 @@ static int w03_precharge_then_transition_up(FILE *out)
     track_wall_logic_init(&logic);
     input = make_wall_input(APP_TRUE, IMU_WALL_ENTER_CDEG, TASK_CONTROL_PERIOD_MS);
     output = track_wall_logic_update(&logic, &input);
-    for (elapsed = 0u; elapsed < (u16)(FAN_PRECHARGE_TIME_MS + IMU_TRANSITION_CONFIRM_MS + 20u); elapsed = (u16)(elapsed + TASK_CONTROL_PERIOD_MS)) {
+    for (elapsed = 0u; elapsed < (u16)(FAN_PRECHARGE_TIME_MS + 20u); elapsed = (u16)(elapsed + TASK_CONTROL_PERIOD_MS)) {
         output = track_wall_logic_update(&logic, &input);
     }
     {
         int pass = (output.state == TRACK_WALL_TRANSITION_UP && output.fan_state == FAN_ESC_HOLD);
-        write_result(out, "W03", pass, pass ? "precharge dwell then transition-up confirm" : "transition-up not reached after precharge", output.state, output.state_elapsed_ms, output.fan_state);
+        write_result(out, "W03", pass, pass ? "precharge dwell enters transition-up before wall confirm" : "transition-up not reached after precharge", output.state, output.state_elapsed_ms, output.fan_state);
         return pass;
     }
 }

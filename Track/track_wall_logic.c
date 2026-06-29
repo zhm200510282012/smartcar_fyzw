@@ -38,6 +38,7 @@ static void fill_output(track_wall_output_t *out, const track_wall_logic_t *logi
 {
     out->state = logic->state;
     out->drive_allowed = APP_TRUE;
+    out->finish_ready = logic->finish_ready;
     out->state_elapsed_ms = logic->state_elapsed_ms;
 
     switch (logic->state) {
@@ -54,7 +55,7 @@ static void fill_output(track_wall_output_t *out, const track_wall_logic_t *logi
     case TRACK_WALL_FAN_PRECHARGE:
         out->fan_state = FAN_ESC_PRECHARGE;
         out->track_mode = TRACK_MODE_TRANSITION;
-        out->speed_limit_mm_s = 0;
+        out->speed_limit_mm_s = TRANSITION_SPEED_MM_S;
         break;
     case TRACK_WALL_TRANSITION_UP:
         out->fan_state = FAN_ESC_HOLD;
@@ -101,6 +102,12 @@ void track_wall_logic_init(track_wall_logic_t *logic)
     logic->transition_confirm_ms = 0u;
     logic->ground_confirm_ms = 0u;
     logic->transition_down_latched = APP_FALSE;
+    logic->wall_approach_latched = APP_FALSE;
+    logic->finish_event_consumed = APP_FALSE;
+    logic->wall_cycle_active = APP_FALSE;
+    logic->ground_recovery_seen = APP_FALSE;
+    logic->previous_wall_approach_event = APP_FALSE;
+    logic->finish_ready = APP_FALSE;
 }
 
 void track_wall_logic_reset(track_wall_logic_t *logic)
@@ -130,6 +137,7 @@ track_wall_output_t track_wall_logic_update(track_wall_logic_t *logic,
     }
 
     logic->state_elapsed_ms = (u16)(logic->state_elapsed_ms + input->dt_ms);
+    logic->finish_ready = APP_FALSE;
 
     if ((input->attitude.fresh == APP_FALSE || input->attitude.id_ok == APP_FALSE) &&
         wall_related_state(logic->state) != APP_FALSE) {
@@ -143,32 +151,28 @@ track_wall_output_t track_wall_logic_update(track_wall_logic_t *logic,
     switch (logic->state) {
     case TRACK_WALL_GROUND_TRACK:
         logic->transition_down_latched = APP_FALSE;
+        logic->wall_cycle_active = APP_FALSE;
+        logic->wall_approach_latched = APP_FALSE;
         if (TRACK_WALL_LOGIC_ALLOWED != 0 &&
-            input->route_event.wall_approach_event != APP_FALSE) {
+            input->route_event.wall_approach_event != APP_FALSE &&
+            logic->previous_wall_approach_event == APP_FALSE) {
+            logic->wall_approach_latched = APP_TRUE;
+            logic->wall_cycle_active = APP_TRUE;
+            logic->ground_recovery_seen = APP_FALSE;
+            logic->finish_event_consumed = APP_FALSE;
             enter_state(logic, TRACK_WALL_WALL_APPROACH);
         }
         break;
     case TRACK_WALL_WALL_APPROACH:
-        if (input->route_event.wall_approach_event == APP_FALSE) {
-            enter_state(logic, TRACK_WALL_GROUND_TRACK);
-        } else {
-            enter_state(logic, TRACK_WALL_FAN_PRECHARGE);
-        }
+        logic->wall_approach_latched = APP_TRUE;
+        logic->wall_cycle_active = APP_TRUE;
+        enter_state(logic, TRACK_WALL_FAN_PRECHARGE);
         break;
     case TRACK_WALL_FAN_PRECHARGE:
-        if (input->route_event.wall_approach_event == APP_FALSE) {
-            enter_state(logic, TRACK_WALL_GROUND_TRACK);
-        } else if (logic->state_elapsed_ms > TRANSITION_TIMEOUT_MS) {
+        if (logic->state_elapsed_ms > TRANSITION_TIMEOUT_MS) {
             enter_state(logic, TRACK_WALL_FAILSAFE_HOLD);
         } else if (logic->state_elapsed_ms >= FAN_PRECHARGE_TIME_MS) {
-            if (pitch >= IMU_WALL_ENTER_CDEG) {
-                logic->transition_confirm_ms = (u16)(logic->transition_confirm_ms + input->dt_ms);
-            } else {
-                logic->transition_confirm_ms = 0u;
-            }
-            if (logic->transition_confirm_ms >= IMU_TRANSITION_CONFIRM_MS) {
-                enter_state(logic, TRACK_WALL_TRANSITION_UP);
-            }
+            enter_state(logic, TRACK_WALL_TRANSITION_UP);
         }
         break;
     case TRACK_WALL_TRANSITION_UP:
@@ -228,12 +232,19 @@ track_wall_output_t track_wall_logic_update(track_wall_logic_t *logic,
         }
         break;
     case TRACK_WALL_GROUND_RECOVERY:
+        logic->ground_recovery_seen = APP_TRUE;
+        if (input->route_event.finish_event != APP_FALSE &&
+            logic->finish_event_consumed == APP_FALSE) {
+            logic->finish_event_consumed = APP_TRUE;
+            logic->finish_ready = APP_TRUE;
+        }
         if (pitch <= GROUND_PITCH_MAX_CDEG) {
             logic->ground_confirm_ms = (u16)(logic->ground_confirm_ms + input->dt_ms);
         } else {
             logic->ground_confirm_ms = 0u;
         }
         if (logic->ground_confirm_ms >= (u16)(IMU_GROUND_CONFIRM_MS * 2u)) {
+            logic->wall_cycle_active = APP_FALSE;
             enter_state(logic, TRACK_WALL_GROUND_TRACK);
         }
         break;
@@ -242,6 +253,7 @@ track_wall_output_t track_wall_logic_update(track_wall_logic_t *logic,
         break;
     }
 
+    logic->previous_wall_approach_event = input->route_event.wall_approach_event;
     fill_output(&out, logic);
     return out;
 }

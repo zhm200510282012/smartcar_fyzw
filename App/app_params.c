@@ -4,6 +4,10 @@
 static const app_param_entry_t g_params[] = {
     {"FAN_ESC_PHYSICAL_OUTPUT_ENABLE", FAN_ESC_PHYSICAL_OUTPUT_ENABLE, "bool", "0 or 1", "locked", "0 keeps P2.2/PWM2P_3 electrically off"},
     {"WALL_RUN_ENABLE", WALL_RUN_ENABLE, "bool", "0 or 1", "locked", "0 keeps real C251 wall states disabled"},
+    {"POWER_GUARD_ENABLE", POWER_GUARD_ENABLE, "bool", "0 or 1", "bench default", "0 allows bench boot but reports POWER_UNCALIBRATED"},
+    {"APP_ARM_SOURCE", APP_ARM_SOURCE, "enum", "0 bench 1 GO 2 UART", "bench default", "switch away from ALWAYS_FOR_BENCH before racing"},
+    {"ENCODER_COUNTS_PER_WHEEL_REV", ENCODER_COUNTS_PER_WHEEL_REV, "counts", ">0 enables mm conversion", "uncalibrated", "0 prevents count-as-mm route events"},
+    {"WHEEL_CIRCUMFERENCE_MM", WHEEL_CIRCUMFERENCE_MM, "mm", ">0 enables mm conversion", "uncalibrated", "0 prevents count-as-mm speed telemetry"},
     {"FAN_PWM_FREQ_HZ", FAN_PWM_FREQ_HZ, "Hz", "ESC protocol dependent", "bench-only", "RC ESC default is 50 Hz"},
     {"FAN_ESC_MIN_US", FAN_ESC_MIN_US, "us", "ESC pulse", "bench-only", "arm/min pulse"},
     {"FAN_ESC_MAX_US", FAN_ESC_MAX_US, "us", "ESC pulse", "bench-only", "max command clamp"},

@@ -18,6 +18,12 @@ typedef struct {
     u16 transition_confirm_ms;
     u16 ground_confirm_ms;
     u8 transition_down_latched;
+    u8 wall_approach_latched;
+    u8 finish_event_consumed;
+    u8 wall_cycle_active;
+    u8 ground_recovery_seen;
+    u8 previous_wall_approach_event;
+    u8 finish_ready;
 } track_wall_logic_t;
 
 typedef struct {
@@ -34,6 +40,7 @@ typedef struct {
     track_mode_t track_mode;
     s16 speed_limit_mm_s;
     u8 drive_allowed;
+    u8 finish_ready;
     u16 state_elapsed_ms;
 } track_wall_output_t;
 

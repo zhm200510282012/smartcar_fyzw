@@ -1,6 +1,7 @@
 #include "track_route_event.h"
 
 static track_route_event_t g_manual_event;
+static route_progress_status_t g_progress_status = ROUTE_PROGRESS_DISABLED;
 
 track_route_event_t track_route_event_none(void)
 {
@@ -45,11 +46,11 @@ static s32 progress_distance_mm(const encoder_sample_t *encoder)
 {
     s32 left;
     s32 right;
-    if (encoder == 0 || encoder->valid == APP_FALSE) {
+    if (encoder == 0 || encoder->valid == APP_FALSE || encoder->progress_mm_valid == APP_FALSE) {
         return 0l;
     }
-    left = abs_s32_local(encoder->left_count);
-    right = abs_s32_local(encoder->right_count);
+    left = abs_s32_local(encoder->left_distance_mm);
+    right = abs_s32_local(encoder->right_distance_mm);
     return (left + right) / 2l;
 }
 #endif
@@ -63,6 +64,15 @@ track_route_event_t track_route_event_from_progress(const encoder_sample_t *enco
 
     event = track_route_event_none();
 #if ROUTE_PROGRESS_SCRIPT_ENABLE != 0
+    if (encoder == 0 || encoder->valid == APP_FALSE) {
+        g_progress_status = ROUTE_PROGRESS_ENCODER_INVALID;
+        return event;
+    }
+    if (encoder->progress_mm_valid == APP_FALSE) {
+        g_progress_status = ROUTE_PROGRESS_UNCALIBRATED;
+        return event;
+    }
+    g_progress_status = ROUTE_PROGRESS_READY;
     distance_mm = progress_distance_mm(encoder);
     if (ROUTE_WALL_APPROACH_DISTANCE_MM > 0L &&
         distance_mm >= ROUTE_WALL_APPROACH_DISTANCE_MM &&
@@ -75,11 +85,15 @@ track_route_event_t track_route_event_from_progress(const encoder_sample_t *enco
         event.finish_event = APP_TRUE;
     }
 #else
-    if (encoder != 0 && encoder->valid == APP_FALSE) {
-        event = track_route_event_none();
-    }
+    (void)encoder;
+    g_progress_status = ROUTE_PROGRESS_DISABLED;
 #endif
     return event;
+}
+
+route_progress_status_t track_route_event_progress_status(void)
+{
+    return g_progress_status;
 }
 
 track_route_event_t track_route_event_select(u8 source,

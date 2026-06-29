@@ -316,7 +316,15 @@ attitude_sample_t bsp_imu_read(void)
     sample.pitch_cdeg = g_input.pitch_cdeg;
     sample.pitch_rate_cdeg_s = g_input.pitch_rate_cdeg_s;
     sample.yaw_rate_cdeg_s = 0;
+    sample.accel_raw[0] = 0;
+    sample.accel_raw[1] = 0;
+    sample.accel_raw[2] = 16384;
+    sample.gyro_raw[0] = 0;
+    sample.gyro_raw[1] = g_input.pitch_rate_cdeg_s;
+    sample.gyro_raw[2] = 0;
     sample.timestamp_ms = g_input.time_ms;
+    sample.spi_ok = g_input.imu_id_ok;
+    sample.who_am_i = g_input.imu_id_ok ? 0x6Bu : 0u;
     sample.id_ok = g_input.imu_id_ok;
     sample.fresh = g_input.imu_fresh;
     return sample;
@@ -331,8 +339,16 @@ encoder_sample_t bsp_encoder_read(void)
     encoder_sample_t sample;
     sample.left_count = g_input.left_count;
     sample.right_count = g_input.right_count;
+    sample.left_delta_counts = (s16)g_input.left_speed_mm_s;
+    sample.right_delta_counts = (s16)g_input.right_speed_mm_s;
+    sample.left_speed_counts_per_s = g_input.left_speed_mm_s;
+    sample.right_speed_counts_per_s = g_input.right_speed_mm_s;
     sample.left_speed_mm_s = g_input.left_speed_mm_s;
     sample.right_speed_mm_s = g_input.right_speed_mm_s;
+    sample.left_distance_mm = g_input.left_count;
+    sample.right_distance_mm = g_input.right_count;
+    sample.speed_mm_s_valid = APP_TRUE;
+    sample.progress_mm_valid = APP_TRUE;
     sample.valid = g_input.encoder_valid;
     return sample;
 }

@@ -51,7 +51,6 @@ static track_wall_logic_t g_wall_logic;
 static track_full_course_profile_t g_full_course_profile;
 static ctrl_adhesion_state_t g_adhesion_state;
 static u16 g_line_lost_elapsed_ms;
-static u8 g_ground_recovery_seen;
 
 static u8 control_or_wall_active(app_state_t state)
 {
@@ -162,7 +161,6 @@ void app_scheduler_init(void)
     track_full_course_profile_init(&g_full_course_profile);
     ctrl_adhesion_init(&g_adhesion_state);
     g_line_lost_elapsed_ms = 0u;
-    g_ground_recovery_seen = APP_FALSE;
 }
 
 static void update_line_error_terms(app_context_t *ctx)
@@ -184,8 +182,12 @@ static void update_track_mode(app_context_t *ctx)
     input.surface_state = ctx->surface_state;
     input.pitch_cdeg = ctx->attitude.pitch_cdeg;
     input.pitch_rate_cdeg_s = 0;
-    speed_sum = (s32)ctx->encoder.left_speed_mm_s + (s32)ctx->encoder.right_speed_mm_s;
-    input.speed_mm_s = (s16)(speed_sum / 2l);
+    if (ctx->encoder.speed_mm_s_valid != APP_FALSE) {
+        speed_sum = (s32)ctx->encoder.left_speed_mm_s + (s32)ctx->encoder.right_speed_mm_s;
+        input.speed_mm_s = (s16)(speed_sum / 2l);
+    } else {
+        input.speed_mm_s = 0;
+    }
     input.cross_confirmed = track_features_detect_crossing(&ctx->emag);
     input.hex_confirmed = track_features_detect_hex_loop(&ctx->emag);
     input.seesaw_confirmed = track_features_detect_seesaw(&ctx->attitude);
@@ -268,16 +270,12 @@ static app_state_t app_state_from_wall_output(const track_wall_output_t *wall)
 }
 
 static void apply_wall_output(app_context_t *ctx,
-                              const track_wall_output_t *wall,
-                              const track_route_event_t *route_event)
+                              const track_wall_output_t *wall)
 {
     if (wall == 0) {
         return;
     }
     ctx->wall_state = wall->state;
-    if (wall->state == TRACK_WALL_GROUND_RECOVERY) {
-        g_ground_recovery_seen = APP_TRUE;
-    }
     if (ctx->app_state == APP_STATE_GROUND_TRACK ||
         ctx->app_state == APP_STATE_TRANSITION_CANDIDATE ||
         ctx->app_state == APP_STATE_SUCTION_PRECHARGE ||
@@ -296,9 +294,7 @@ static void apply_wall_output(app_context_t *ctx,
         if (wall->state != TRACK_WALL_GROUND_TRACK) {
             ctx->state_elapsed_ms = wall->state_elapsed_ms;
         }
-        if (route_event != 0 &&
-            route_event->finish_event != APP_FALSE &&
-            g_ground_recovery_seen != APP_FALSE) {
+        if (wall->finish_ready != APP_FALSE) {
             ctx->app_state = APP_STATE_FINISHED;
             ctx->state_elapsed_ms = 0u;
         }
@@ -317,10 +313,10 @@ static s32 abs_s32_local(s32 value)
 
 static s32 encoder_progress_distance_mm(const encoder_sample_t *encoder)
 {
-    if (encoder == 0 || encoder->valid == APP_FALSE) {
+    if (encoder == 0 || encoder->valid == APP_FALSE || encoder->progress_mm_valid == APP_FALSE) {
         return 0l;
     }
-    return (abs_s32_local(encoder->left_count) + abs_s32_local(encoder->right_count)) / 2l;
+    return (abs_s32_local(encoder->left_distance_mm) + abs_s32_local(encoder->right_distance_mm)) / 2l;
 }
 
 static void update_full_course_segment(app_context_t *ctx,
@@ -431,7 +427,7 @@ void app_scheduler_run_due(app_context_t *ctx, u32 now_ms)
         wall_input.dt_ms = TASK_CONTROL_PERIOD_MS;
         wall_output = track_wall_logic_update(&g_wall_logic, &wall_input);
         update_track_mode(ctx);
-        apply_wall_output(ctx, &wall_output, &route_event);
+        apply_wall_output(ctx, &wall_output);
         update_full_course_segment(ctx, &route_event);
 
         if (ctx->speed_limit_mm_s <= 0 ||
@@ -476,6 +472,8 @@ void app_scheduler_run_due(app_context_t *ctx, u32 now_ms)
         ctx->left_drive_command_native = speed_output.left_native;
         ctx->right_drive_command_native = speed_output.right_native;
         ctx->drive_command_native = speed_output.average_native;
+        ctrl_adhesion_set_physical_active(&g_adhesion_state,
+                                          bsp_fan_esc_is_physical_active());
         ctx->fan_cmd = ctrl_adhesion_update(&g_adhesion_state,
                                             ctx->wall_state,
                                             ctx->adhesion_risk,

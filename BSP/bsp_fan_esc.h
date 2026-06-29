@@ -14,5 +14,7 @@ void bsp_fan_esc_apply(const fan_esc_command_t *cmd);
 void bsp_fan_esc_force_off(void);
 fan_esc_command_t bsp_fan_esc_last_command(void);
 u16 bsp_fan_esc_last_output_us(void);
+u16 bsp_fan_esc_last_applied_us(void);
+app_bool_t bsp_fan_esc_is_physical_active(void);
 
 #endif

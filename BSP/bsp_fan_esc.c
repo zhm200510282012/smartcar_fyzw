@@ -13,6 +13,7 @@
 
 static fan_esc_command_t g_last_command;
 static u16 g_last_output_us;
+static u16 g_last_applied_us;
 
 static u16 clamp_pulse_us(u16 value)
 {
@@ -23,7 +24,8 @@ static u16 clamp_pulse_us(u16 value)
 
 static u8 physical_output_allowed(void)
 {
-    if (BOARD_FAN_PWM_MAPPED == 0) return APP_FALSE;
+    if (BOARD_FAN_ESC_SIGNAL_MAPPED == 0) return APP_FALSE;
+    if (BOARD_FAN_ESC_BENCH_VERIFIED == 0) return APP_FALSE;
     if (FAN_ESC_PHYSICAL_OUTPUT_ENABLE == 0) return APP_FALSE;
     return APP_TRUE;
 }
@@ -75,9 +77,11 @@ static void store_off_command(void)
     g_last_command.state = FAN_ESC_OFF;
     g_last_command.request_us = FAN_ESC_MIN_US;
     g_last_command.output_us = 0u;
-    g_last_command.mapped = BOARD_FAN_PWM_MAPPED;
+    g_last_command.mapped = BOARD_FAN_ESC_SIGNAL_MAPPED;
     g_last_command.physical_enabled = APP_FALSE;
+    g_last_command.bench_verified = BOARD_FAN_ESC_BENCH_VERIFIED;
     g_last_output_us = 0u;
+    g_last_applied_us = 0u;
 }
 
 void bsp_fan_esc_init(void)
@@ -106,13 +110,15 @@ void bsp_fan_esc_apply(const fan_esc_command_t *cmd)
     }
 
     safe = *cmd;
-    safe.mapped = BOARD_FAN_PWM_MAPPED;
+    safe.mapped = BOARD_FAN_ESC_SIGNAL_MAPPED;
     safe.physical_enabled = physical_output_allowed();
+    safe.bench_verified = BOARD_FAN_ESC_BENCH_VERIFIED;
     safe.request_us = clamp_pulse_us(safe.request_us);
 
     if (safe.state == FAN_ESC_OFF || safe.physical_enabled == APP_FALSE) {
         safe.output_us = 0u;
         g_last_output_us = 0u;
+        g_last_applied_us = 0u;
         g_last_command = safe;
 #ifndef HOST_SIL
         fan_hw_disable_output();
@@ -122,6 +128,7 @@ void bsp_fan_esc_apply(const fan_esc_command_t *cmd)
 
     safe.output_us = safe.request_us;
     g_last_output_us = safe.output_us;
+    g_last_applied_us = safe.output_us;
     g_last_command = safe;
 #ifndef HOST_SIL
     fan_hw_write(safe.output_us);
@@ -136,4 +143,17 @@ fan_esc_command_t bsp_fan_esc_last_command(void)
 u16 bsp_fan_esc_last_output_us(void)
 {
     return g_last_output_us;
+}
+
+u16 bsp_fan_esc_last_applied_us(void)
+{
+    return g_last_applied_us;
+}
+
+app_bool_t bsp_fan_esc_is_physical_active(void)
+{
+    if (g_last_command.physical_enabled == APP_FALSE) {
+        return APP_FALSE;
+    }
+    return (g_last_applied_us > 0u) ? APP_TRUE : APP_FALSE;
 }

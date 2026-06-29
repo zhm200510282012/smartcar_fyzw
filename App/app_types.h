@@ -10,6 +10,8 @@ typedef unsigned long u32;
 typedef signed long s32;
 #endif
 
+typedef u8 app_bool_t;
+
 #define APP_TRUE 1u
 #define APP_FALSE 0u
 #define EMAG_CHANNEL_COUNT 5u
@@ -149,6 +151,7 @@ typedef struct {
     u16 output_us;
     u8 mapped;
     u8 physical_enabled;
+    u8 bench_verified;
 } fan_esc_command_t;
 
 typedef struct {
@@ -168,7 +171,11 @@ typedef struct {
     s16 pitch_cdeg;
     s16 pitch_rate_cdeg_s;
     s16 yaw_rate_cdeg_s;
+    s16 accel_raw[3];
+    s16 gyro_raw[3];
     u32 timestamp_ms;
+    u8 spi_ok;
+    u8 who_am_i;
     u8 id_ok;
     u8 fresh;
 } attitude_sample_t;
@@ -176,8 +183,16 @@ typedef struct {
 typedef struct {
     s32 left_count;
     s32 right_count;
+    s16 left_delta_counts;
+    s16 right_delta_counts;
+    s16 left_speed_counts_per_s;
+    s16 right_speed_counts_per_s;
     s16 left_speed_mm_s;
     s16 right_speed_mm_s;
+    s32 left_distance_mm;
+    s32 right_distance_mm;
+    u8 speed_mm_s_valid;
+    u8 progress_mm_valid;
     u8 valid;
 } encoder_sample_t;
 

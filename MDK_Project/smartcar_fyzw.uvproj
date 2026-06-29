@@ -361,6 +361,11 @@
               <FilePath>..\App\app_params.c</FilePath>
             </File>
             <File>
+              <FileName>app_hardware_diagnostic.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\App\app_hardware_diagnostic.c</FilePath>
+            </File>
+            <File>
               <FileName>app_config.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\App\app_config.h</FilePath>
@@ -374,6 +379,11 @@
               <FileName>app_types.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\App\app_types.h</FilePath>
+            </File>
+            <File>
+              <FileName>app_hardware_diagnostic.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\App\app_hardware_diagnostic.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -539,6 +549,21 @@
               <FileName>track_wall_logic.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Track\track_wall_logic.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Board_Drivers</GroupName>
+          <Files>
+            <File>
+              <FileName>lsm6dsr_driver.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Drivers\Board\lsm6dsr_driver.c</FilePath>
+            </File>
+            <File>
+              <FileName>lsm6dsr_driver.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Drivers\Board\lsm6dsr_driver.h</FilePath>
             </File>
           </Files>
         </Group>

@@ -84,13 +84,24 @@ speed_pi_output_t ctrl_speed_update_pair(speed_pi_state_t *left_state,
                                          encoder_sample_t encoder)
 {
     speed_pi_output_t output;
+    s16 left_measured;
+    s16 right_measured;
+
+    if (encoder.speed_mm_s_valid != APP_FALSE) {
+        left_measured = encoder.left_speed_mm_s;
+        right_measured = encoder.right_speed_mm_s;
+    } else {
+        left_measured = encoder.left_speed_counts_per_s;
+        right_measured = encoder.right_speed_counts_per_s;
+    }
+
     output.left_native = ctrl_speed_pi_update(left_state,
                                              left_target_mm_s,
-                                             encoder.left_speed_mm_s,
+                                             left_measured,
                                              encoder.valid);
     output.right_native = ctrl_speed_pi_update(right_state,
                                               right_target_mm_s,
-                                              encoder.right_speed_mm_s,
+                                              right_measured,
                                               encoder.valid);
     output.average_native = (s16)(((s32)output.left_native + (s32)output.right_native) / 2l);
     return output;

@@ -1,0 +1,120 @@
+{
+  "scenario_count": 15,
+  "passed": 15,
+  "failed": 0,
+  "scenarios": {
+    "RUNTIME01": {
+      "pass": true,
+      "metric_a": 1,
+      "metric_b": 0,
+      "metric_c": 1,
+      "notes": "power guard disabled allows safe-ready path with POWER_UNCALIBRATED telemetry"
+    },
+    "RUNTIME02": {
+      "pass": true,
+      "metric_a": 5,
+      "metric_b": 1,
+      "metric_c": 6,
+      "notes": "arm input reaches ground track"
+    },
+    "RUNTIME03": {
+      "pass": true,
+      "metric_a": 1,
+      "metric_b": 0,
+      "metric_c": 3500,
+      "notes": "five-channel ADC valid sample remains control-valid"
+    },
+    "RUNTIME04": {
+      "pass": true,
+      "metric_a": 1,
+      "metric_b": 1,
+      "metric_c": 107,
+      "notes": "IMU valid sample reports fresh/id_ok"
+    },
+    "RUNTIME05": {
+      "pass": true,
+      "metric_a": 0,
+      "metric_b": 0,
+      "metric_c": 0,
+      "notes": "IMU SPI failure explicit"
+    },
+    "RUNTIME06": {
+      "pass": true,
+      "metric_a": 25,
+      "metric_b": 25000,
+      "metric_c": 0,
+      "notes": "count/s and mm/s stay separated while scale is uncalibrated"
+    },
+    "RUNTIME07": {
+      "pass": true,
+      "metric_a": 0,
+      "metric_b": 0,
+      "metric_c": 0,
+      "notes": "uncalibrated progress script cannot trigger wall event"
+    },
+    "RUNTIME08": {
+      "pass": true,
+      "metric_a": 2,
+      "metric_b": 1,
+      "metric_c": 1,
+      "notes": "wall approach event is latched"
+    },
+    "RUNTIME09": {
+      "pass": true,
+      "metric_a": 2,
+      "metric_b": 70,
+      "metric_c": 2,
+      "notes": "fan precharge keeps nonzero entry speed"
+    },
+    "RUNTIME10": {
+      "pass": true,
+      "metric_a": 3,
+      "metric_b": 2,
+      "metric_c": 1,
+      "notes": "precharge timeout enters transition-up unconditionally"
+    },
+    "RUNTIME11": {
+      "pass": true,
+      "metric_a": 6,
+      "metric_b": 1450,
+      "metric_c": 0,
+      "notes": "wall failsafe requests fan hold logically"
+    },
+    "RUNTIME12": {
+      "pass": true,
+      "metric_a": 0,
+      "metric_b": 0,
+      "metric_c": 2510,
+      "notes": "ESC arm timer waits for physical PWM active"
+    },
+    "RUNTIME13": {
+      "pass": true,
+      "metric_a": 0,
+      "metric_b": 0,
+      "metric_c": 1,
+      "notes": "new wall cycle resets recovery flags"
+    },
+    "RUNTIME14": {
+      "pass": true,
+      "metric_a": 1,
+      "metric_b": 0,
+      "metric_c": 1,
+      "notes": "finish event consumed once"
+    },
+    "RUNTIME15": {
+      "pass": true,
+      "metric_a": 0,
+      "metric_b": 0,
+      "metric_c": 0,
+      "notes": "C251 runtime no servo calls"
+    }
+  },
+  "safety": {
+    "fan_esc_physical_output_enable": 0,
+    "wall_run_enable": 0,
+    "suction_hw_verified": 0,
+    "route_progress_script_enable": 0,
+    "real_bench_pass": false,
+    "real_wall_pass": false
+  }
+}

@@ -98,8 +98,16 @@ static encoder_sample_t make_encoder(s16 left_speed, s16 right_speed, u8 valid)
     encoder_sample_t encoder;
     encoder.left_count = 0l;
     encoder.right_count = 0l;
+    encoder.left_delta_counts = left_speed;
+    encoder.right_delta_counts = right_speed;
+    encoder.left_speed_counts_per_s = left_speed;
+    encoder.right_speed_counts_per_s = right_speed;
     encoder.left_speed_mm_s = left_speed;
     encoder.right_speed_mm_s = right_speed;
+    encoder.left_distance_mm = 0l;
+    encoder.right_distance_mm = 0l;
+    encoder.speed_mm_s_valid = APP_TRUE;
+    encoder.progress_mm_valid = APP_TRUE;
     encoder.valid = valid;
     return encoder;
 }

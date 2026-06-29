@@ -1,0 +1,16 @@
+scenario,pass,metric_a,metric_b,metric_c,notes
+RUNTIME01,true,1,0,1,power guard disabled allows safe-ready path with POWER_UNCALIBRATED telemetry
+RUNTIME02,true,5,1,6,arm input reaches ground track
+RUNTIME03,true,1,0,3500,five-channel ADC valid sample remains control-valid
+RUNTIME04,true,1,1,107,IMU valid sample reports fresh/id_ok
+RUNTIME05,true,0,0,0,IMU SPI failure explicit
+RUNTIME06,true,25,25000,0,count/s and mm/s stay separated while scale is uncalibrated
+RUNTIME07,true,0,0,0,uncalibrated progress script cannot trigger wall event
+RUNTIME08,true,2,1,1,wall approach event is latched
+RUNTIME09,true,2,70,2,fan precharge keeps nonzero entry speed
+RUNTIME10,true,3,2,1,precharge timeout enters transition-up unconditionally
+RUNTIME11,true,6,1450,0,wall failsafe requests fan hold logically
+RUNTIME12,true,0,0,2510,ESC arm timer waits for physical PWM active
+RUNTIME13,true,0,0,1,new wall cycle resets recovery flags
+RUNTIME14,true,1,0,1,finish event consumed once
+RUNTIME15,true,0,0,0,C251 runtime no servo calls

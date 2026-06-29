@@ -19,11 +19,19 @@ typedef struct {
     u8 finish_event;
 } track_route_event_t;
 
+typedef enum {
+    ROUTE_PROGRESS_DISABLED = 0,
+    ROUTE_PROGRESS_READY,
+    ROUTE_PROGRESS_UNCALIBRATED,
+    ROUTE_PROGRESS_ENCODER_INVALID
+} route_progress_status_t;
+
 track_route_event_t track_route_event_none(void);
 void track_route_event_manual_set(const track_route_event_t *event);
 track_route_event_t track_route_event_manual_get(void);
 void track_route_event_manual_clear(void);
 track_route_event_t track_route_event_from_progress(const encoder_sample_t *encoder);
+route_progress_status_t track_route_event_progress_status(void);
 track_route_event_t track_route_event_select(u8 source,
                                              const track_route_event_t *host_event,
                                              const encoder_sample_t *encoder);

@@ -3,7 +3,11 @@
 
 #include "competition_profile.h"
 
+#ifdef HOST_SIL
 #define APP_TEST_MODE 1
+#else
+#define APP_TEST_MODE 0
+#endif
 #define APP_MANUAL_ARM_REQUIRED 1
 #define FYZW_USE_LQ_OFFICIAL_LIB 0
 

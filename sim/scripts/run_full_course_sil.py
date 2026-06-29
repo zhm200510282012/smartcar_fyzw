@@ -347,7 +347,7 @@ def assert_expectation(scenario, rows, sequence):
         if seq & FAULT_STATES:
             failures.append("ground scenario entered fault state")
     elif expect == "wall_track":
-        for required in ("TRANSITION_CANDIDATE", "SUCTION_PRECHARGE", "APPROACH_TRANSITION", "TRANSITION_UP", "WALL_TRACK"):
+        for required in ("TRANSITION_CANDIDATE", "SUCTION_PRECHARGE", "TRANSITION_UP", "WALL_TRACK"):
             if required not in seq:
                 failures.append(f"{required} not reached")
         if seq & {"GROUND_FAULT", "WALL_FAILSAFE_HOLD", "HARD_FAULT"}:

@@ -7,9 +7,13 @@ static fan_esc_command_t make_command(fan_esc_state_t state, u16 request_us)
     fan_esc_command_t cmd;
     cmd.state = state;
     cmd.request_us = request_us;
-    cmd.output_us = (FAN_ESC_PHYSICAL_OUTPUT_ENABLE != 0 && BOARD_FAN_PWM_MAPPED != 0) ? request_us : 0u;
-    cmd.mapped = BOARD_FAN_PWM_MAPPED;
-    cmd.physical_enabled = FAN_ESC_PHYSICAL_OUTPUT_ENABLE;
+    cmd.output_us = (FAN_ESC_PHYSICAL_OUTPUT_ENABLE != 0 &&
+                     BOARD_FAN_ESC_SIGNAL_MAPPED != 0 &&
+                     BOARD_FAN_ESC_BENCH_VERIFIED != 0) ? request_us : 0u;
+    cmd.mapped = BOARD_FAN_ESC_SIGNAL_MAPPED;
+    cmd.physical_enabled = (FAN_ESC_PHYSICAL_OUTPUT_ENABLE != 0 &&
+                            BOARD_FAN_ESC_BENCH_VERIFIED != 0) ? APP_TRUE : APP_FALSE;
+    cmd.bench_verified = BOARD_FAN_ESC_BENCH_VERIFIED;
     return cmd;
 }
 
@@ -24,11 +28,21 @@ void ctrl_adhesion_init(ctrl_adhesion_state_t *state)
     state->ground_confirm_ms = 0u;
     state->ramp_elapsed_ms = 0u;
     state->request_us = FAN_ESC_MIN_US;
+    state->physical_active = APP_FALSE;
+    state->real_esc_armed = APP_FALSE;
 }
 
 void ctrl_adhesion_reset(ctrl_adhesion_state_t *state)
 {
     ctrl_adhesion_init(state);
+}
+
+void ctrl_adhesion_set_physical_active(ctrl_adhesion_state_t *state, u8 physical_active)
+{
+    if (state == 0) {
+        return;
+    }
+    state->physical_active = physical_active;
 }
 
 static void enter_state(ctrl_adhesion_state_t *state, fan_esc_state_t next, u16 request_us)
@@ -51,15 +65,20 @@ fan_esc_command_t ctrl_adhesion_update(ctrl_adhesion_state_t *state,
         return make_command(FAN_ESC_OFF, FAN_ESC_MIN_US);
     }
 
-    state->state_elapsed_ms = (u16)(state->state_elapsed_ms + dt_ms);
-
     if (FAN_ESC_PHYSICAL_OUTPUT_ENABLE != 0 &&
+        BOARD_FAN_ESC_BENCH_VERIFIED != 0 &&
         state->state == FAN_ESC_ARMING) {
         state->request_us = FAN_ESC_MIN_US;
+        if (state->physical_active != APP_FALSE) {
+            state->state_elapsed_ms = (u16)(state->state_elapsed_ms + dt_ms);
+        }
         if (state->state_elapsed_ms < FAN_ESC_ARM_TIME_MS) {
             return make_command(FAN_ESC_ARMING, FAN_ESC_MIN_US);
         }
+        state->real_esc_armed = APP_TRUE;
         enter_state(state, FAN_ESC_OFF, FAN_ESC_MIN_US);
+    } else {
+        state->state_elapsed_ms = (u16)(state->state_elapsed_ms + dt_ms);
     }
 
     if (wall_state == TRACK_WALL_FAILSAFE_HOLD) {

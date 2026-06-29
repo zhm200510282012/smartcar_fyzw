@@ -1,0 +1,9 @@
+Keil C251 Clean/Rebuild target AI8051U_FYZW_SAFE
+Timestamp: 2026-06-29T19:23:11.4432218+08:00
+Project: MDK_Project\smartcar_fyzw.uvproj
+ERROR: uVision.com/UV4.exe not found in PATH or common searched install paths.
+Searched: PATH, C:\Keil_v5, C:\Keil, D:\Keil_v5, D:\Keil, C:\Program Files, C:\Program Files (x86), D:\Program Files, D:\application file.
+CLEAN_EXIT_CODE: 127
+REBUILD_EXIT_CODE: 127
+HEX_EXISTS: True
+NOTE: HEX_EXISTS reflects a pre-existing artifact; this run did not regenerate HEX because Keil executable was not found.

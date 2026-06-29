@@ -26,6 +26,7 @@ static void fan_off(app_context_t *ctx)
     ctx->fan_cmd.request_us = FAN_ESC_MIN_US;
     ctx->fan_cmd.output_us = 0u;
     ctx->fan_cmd.physical_enabled = APP_FALSE;
+    ctx->fan_cmd.bench_verified = APP_FALSE;
 }
 
 void app_output_arbitrate(app_context_t *ctx)
@@ -49,6 +50,7 @@ void app_output_arbitrate(app_context_t *ctx)
             ctx->fan_cmd.request_us = FAN_HOLD_US;
             ctx->fan_cmd.output_us = 0u;
             ctx->fan_cmd.physical_enabled = APP_FALSE;
+            ctx->fan_cmd.bench_verified = APP_FALSE;
         } else {
             fan_off(ctx);
         }

@@ -46,6 +46,7 @@ void app_safety_apply_profile(app_context_t *ctx, safety_profile_t profile)
         ctx->fan_cmd.state = FAN_ESC_OFF;
         ctx->fan_cmd.request_us = FAN_ESC_MIN_US;
         ctx->fan_cmd.output_us = 0u;
+        ctx->fan_cmd.physical_enabled = APP_FALSE;
         ctx->suction_cmd.mode = SUCTION_OFF;
         ctx->suction_cmd.command_native = SUCTION_SAFE_OFF_NATIVE;
         ctx->app_state = APP_STATE_GROUND_FAULT;
@@ -58,6 +59,7 @@ void app_safety_apply_profile(app_context_t *ctx, safety_profile_t profile)
         ctx->fan_cmd.state = FAN_ESC_FAILSAFE_HOLD;
         ctx->fan_cmd.request_us = FAN_HOLD_US;
         ctx->fan_cmd.output_us = 0u;
+        ctx->fan_cmd.physical_enabled = APP_FALSE;
         ctx->suction_cmd.mode = SUCTION_EMERGENCY_HOLD;
         ctx->suction_cmd.command_native = SUCTION_EMERGENCY_HOLD_NATIVE;
         ctx->app_state = APP_STATE_WALL_FAILSAFE_HOLD;
@@ -70,6 +72,7 @@ void app_safety_apply_profile(app_context_t *ctx, safety_profile_t profile)
         ctx->fan_cmd.state = FAN_ESC_OFF;
         ctx->fan_cmd.request_us = FAN_ESC_MIN_US;
         ctx->fan_cmd.output_us = 0u;
+        ctx->fan_cmd.physical_enabled = APP_FALSE;
         ctx->suction_cmd.mode = SUCTION_OFF;
         ctx->suction_cmd.command_native = SUCTION_SAFE_OFF_NATIVE;
         ctx->suction_cmd.armed = APP_FALSE;
@@ -86,6 +89,7 @@ void app_safety_apply_profile(app_context_t *ctx, safety_profile_t profile)
         ctx->fan_cmd.state = FAN_ESC_OFF;
         ctx->fan_cmd.request_us = FAN_ESC_MIN_US;
         ctx->fan_cmd.output_us = 0u;
+        ctx->fan_cmd.physical_enabled = APP_FALSE;
         ctx->suction_cmd.mode = SUCTION_OFF;
         ctx->suction_cmd.command_native = SUCTION_SAFE_OFF_NATIVE;
         ctx->app_state = APP_STATE_HARD_FAULT;
