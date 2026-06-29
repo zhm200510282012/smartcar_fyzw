@@ -39,9 +39,9 @@ static s16 counts_per_second(s16 delta_counts)
     return (s16)cps;
 }
 
+#if (ENCODER_COUNTS_PER_WHEEL_REV > 0L) && (WHEEL_CIRCUMFERENCE_MM > 0L)
 static s16 speed_mm_s_from_counts(s16 counts_s)
 {
-#if (ENCODER_COUNTS_PER_WHEEL_REV > 0L) && (WHEEL_CIRCUMFERENCE_MM > 0L)
     s32 speed;
 
     speed = ((s32)counts_s * (s32)WHEEL_CIRCUMFERENCE_MM) /
@@ -53,22 +53,26 @@ static s16 speed_mm_s_from_counts(s16 counts_s)
         speed = -32768l;
     }
     return (s16)speed;
-#else
-    (void)counts_s;
-    return 0;
-#endif
 }
+#else
+static s16 speed_mm_s_from_counts(void)
+{
+    return 0;
+}
+#endif
 
+#if (ENCODER_COUNTS_PER_WHEEL_REV > 0L) && (WHEEL_CIRCUMFERENCE_MM > 0L)
 static s32 distance_mm_from_counts(s32 counts)
 {
-#if (ENCODER_COUNTS_PER_WHEEL_REV > 0L) && (WHEEL_CIRCUMFERENCE_MM > 0L)
     return (counts * (s32)WHEEL_CIRCUMFERENCE_MM) /
            (s32)ENCODER_COUNTS_PER_WHEEL_REV;
-#else
-    (void)counts;
-    return 0l;
-#endif
 }
+#else
+static s32 distance_mm_from_counts(void)
+{
+    return 0l;
+}
+#endif
 
 static void clear_encoder_sample(encoder_sample_t *e)
 {
@@ -172,10 +176,17 @@ encoder_sample_t bsp_encoder_read(void)
     e.right_speed_counts_per_s = counts_per_second(right_delta);
     e.speed_mm_s_valid = encoder_scale_valid();
     e.progress_mm_valid = encoder_scale_valid();
+#if (ENCODER_COUNTS_PER_WHEEL_REV > 0L) && (WHEEL_CIRCUMFERENCE_MM > 0L)
     e.left_speed_mm_s = speed_mm_s_from_counts(e.left_speed_counts_per_s);
     e.right_speed_mm_s = speed_mm_s_from_counts(e.right_speed_counts_per_s);
     e.left_distance_mm = distance_mm_from_counts(e.left_count);
     e.right_distance_mm = distance_mm_from_counts(e.right_count);
+#else
+    e.left_speed_mm_s = speed_mm_s_from_counts();
+    e.right_speed_mm_s = speed_mm_s_from_counts();
+    e.left_distance_mm = distance_mm_from_counts();
+    e.right_distance_mm = distance_mm_from_counts();
+#endif
 #ifdef HOST_SIL
     e.valid = g_host_valid;
 #else

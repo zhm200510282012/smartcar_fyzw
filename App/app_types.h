@@ -1,13 +1,15 @@
 #ifndef APP_TYPES_H
 #define APP_TYPES_H
 
-#ifndef __DEF_H__
+#ifdef HOST_SIL
 typedef unsigned char u8;
 typedef signed char s8;
 typedef unsigned int u16;
 typedef signed int s16;
 typedef unsigned long u32;
 typedef signed long s32;
+#else
+#include "../Drivers/Official_LQ/User/DEF.h"
 #endif
 
 typedef u8 app_bool_t;

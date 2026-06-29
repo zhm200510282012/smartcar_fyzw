@@ -9,7 +9,8 @@ static s16 configured_pitch_cdeg(const lsm6dsr_sample_t *sample)
     u8 axis;
 
     axis = IMU_PITCH_AXIS;
-    pitch = ((s32)sample->accel_raw[axis] * 10000l) / 16384l;
+    pitch = (s32)sample->accel_raw[axis];
+    pitch = (pitch * 10000L) / 16384L;
     pitch = ((s32)IMU_PITCH_SIGN * pitch) + (s32)IMU_PITCH_OFFSET_CDEG;
     if (pitch > 32767l) {
         pitch = 32767l;

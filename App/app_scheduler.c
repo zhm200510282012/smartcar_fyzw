@@ -474,10 +474,11 @@ void app_scheduler_run_due(app_context_t *ctx, u32 now_ms)
         ctx->drive_command_native = speed_output.average_native;
         ctrl_adhesion_set_physical_active(&g_adhesion_state,
                                           bsp_fan_esc_is_physical_active());
-        ctx->fan_cmd = ctrl_adhesion_update(&g_adhesion_state,
-                                            ctx->wall_state,
-                                            ctx->adhesion_risk,
-                                            TASK_CONTROL_PERIOD_MS);
+        ctrl_adhesion_update(&g_adhesion_state,
+                             ctx->wall_state,
+                             ctx->adhesion_risk,
+                             TASK_CONTROL_PERIOD_MS,
+                             &ctx->fan_cmd);
         app_safety_apply_profile(ctx, app_safety_select_profile(ctx));
         reset_fuzzy_if_blocked(ctx);
         app_output_arbitrate(ctx);

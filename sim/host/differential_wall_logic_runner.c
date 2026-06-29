@@ -346,12 +346,12 @@ static int w05_risk_boost_returns_hold(FILE *out)
     ctrl_adhesion_state_t adhesion;
     fan_esc_command_t cmd;
     ctrl_adhesion_init(&adhesion);
-    cmd = ctrl_adhesion_update(&adhesion, TRACK_WALL_WALL_TRACK, 900u, TASK_CONTROL_PERIOD_MS);
+    ctrl_adhesion_update(&adhesion, TRACK_WALL_WALL_TRACK, 900u, TASK_CONTROL_PERIOD_MS, &cmd);
     {
         u16 elapsed;
         int boost_seen = (cmd.state == FAN_ESC_BOOST);
         for (elapsed = 0u; elapsed < (u16)(FAN_BOOST_TIME_MS + 40u); elapsed = (u16)(elapsed + TASK_CONTROL_PERIOD_MS)) {
-            cmd = ctrl_adhesion_update(&adhesion, TRACK_WALL_WALL_TRACK, 0u, TASK_CONTROL_PERIOD_MS);
+            ctrl_adhesion_update(&adhesion, TRACK_WALL_WALL_TRACK, 0u, TASK_CONTROL_PERIOD_MS, &cmd);
         }
         {
             int pass = (boost_seen && cmd.state == FAN_ESC_HOLD);
@@ -366,7 +366,7 @@ static int w06_down_keeps_hold(FILE *out)
     ctrl_adhesion_state_t adhesion;
     fan_esc_command_t cmd;
     ctrl_adhesion_init(&adhesion);
-    cmd = ctrl_adhesion_update(&adhesion, TRACK_WALL_TRANSITION_DOWN, 0u, TASK_CONTROL_PERIOD_MS);
+    ctrl_adhesion_update(&adhesion, TRACK_WALL_TRANSITION_DOWN, 0u, TASK_CONTROL_PERIOD_MS, &cmd);
     {
         int pass = (cmd.state == FAN_ESC_HOLD && cmd.request_us == FAN_HOLD_US);
         write_result(out, "W06", pass, pass ? "transition down keeps fan hold" : "transition down dropped fan early", cmd.state, cmd.request_us, cmd.output_us);
@@ -380,9 +380,9 @@ static int w07_ground_recovery_ramp_down(FILE *out)
     fan_esc_command_t cmd;
     u16 elapsed;
     ctrl_adhesion_init(&adhesion);
-    cmd = ctrl_adhesion_update(&adhesion, TRACK_WALL_GROUND_RECOVERY, 0u, TASK_CONTROL_PERIOD_MS);
+    ctrl_adhesion_update(&adhesion, TRACK_WALL_GROUND_RECOVERY, 0u, TASK_CONTROL_PERIOD_MS, &cmd);
     for (elapsed = 0u; elapsed < (u16)(IMU_GROUND_CONFIRM_MS + FAN_RAMP_DOWN_PERIOD_MS + 20u); elapsed = (u16)(elapsed + TASK_CONTROL_PERIOD_MS)) {
-        cmd = ctrl_adhesion_update(&adhesion, TRACK_WALL_GROUND_RECOVERY, 0u, TASK_CONTROL_PERIOD_MS);
+        ctrl_adhesion_update(&adhesion, TRACK_WALL_GROUND_RECOVERY, 0u, TASK_CONTROL_PERIOD_MS, &cmd);
     }
     {
         int pass = (cmd.state == FAN_ESC_RAMP_DOWN || cmd.state == FAN_ESC_OFF);

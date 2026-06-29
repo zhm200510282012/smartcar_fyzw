@@ -85,7 +85,9 @@ track_route_event_t track_route_event_from_progress(const encoder_sample_t *enco
         event.finish_event = APP_TRUE;
     }
 #else
-    (void)encoder;
+    if (encoder != 0) {
+        event = track_route_event_none();
+    }
     g_progress_status = ROUTE_PROGRESS_DISABLED;
 #endif
     return event;

@@ -64,7 +64,7 @@ void bsp_power_init(void)
         adc.ADC_AdjResult = ADC_RIGHT_JUSTIFIED;
         adc.ADC_CsSetup = 0u;
         adc.ADC_CsHold = 1u;
-        (void)ADC_Inilize(&adc);
+        ADC_Inilize(&adc);
         ADC_PowerControl(1u);
     }
 #endif

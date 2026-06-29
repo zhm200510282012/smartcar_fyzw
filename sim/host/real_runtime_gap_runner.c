@@ -252,7 +252,11 @@ static int runtime11_failsafe_hold_fan(FILE *out)
 
     ctrl_adhesion_init(&state);
     ctrl_adhesion_set_physical_active(&state, APP_TRUE);
-    command = ctrl_adhesion_update(&state, TRACK_WALL_FAILSAFE_HOLD, 1000u, TASK_ADHESION_PERIOD_MS);
+    ctrl_adhesion_update(&state,
+                         TRACK_WALL_FAILSAFE_HOLD,
+                         1000u,
+                         TASK_ADHESION_PERIOD_MS,
+                         &command);
     pass = (command.state == FAN_ESC_FAILSAFE_HOLD &&
             command.request_us == FAN_HOLD_US);
     write_result(out, "RUNTIME11", pass, pass ? "wall failsafe requests fan hold logically" : "wall failsafe cut fan request", command.state, command.request_us, command.output_us);
@@ -262,13 +266,18 @@ static int runtime11_failsafe_hold_fan(FILE *out)
 static int runtime12_esc_arm_waits_physical(FILE *out)
 {
     ctrl_adhesion_state_t state;
+    fan_esc_command_t command;
     u16 elapsed;
     int pass;
 
     ctrl_adhesion_init(&state);
     ctrl_adhesion_set_physical_active(&state, APP_FALSE);
     for (elapsed = 0u; elapsed <= (u16)(FAN_ESC_ARM_TIME_MS + TASK_ADHESION_PERIOD_MS); elapsed = (u16)(elapsed + TASK_ADHESION_PERIOD_MS)) {
-        (void)ctrl_adhesion_update(&state, TRACK_WALL_GROUND_TRACK, 0u, TASK_ADHESION_PERIOD_MS);
+        ctrl_adhesion_update(&state,
+                             TRACK_WALL_GROUND_TRACK,
+                             0u,
+                             TASK_ADHESION_PERIOD_MS,
+                             &command);
     }
     pass = (state.real_esc_armed == APP_FALSE);
     write_result(out, "RUNTIME12", pass, pass ? "ESC arm timer waits for physical PWM active" : "ESC arm timer faked real arm", state.state, state.real_esc_armed, state.state_elapsed_ms);
@@ -286,7 +295,7 @@ static int runtime13_new_cycle_resets_flags(FILE *out)
     logic.finish_event_consumed = APP_TRUE;
     event = track_route_event_none();
     event.wall_approach_event = APP_TRUE;
-    (void)update_wall(&logic, event, 0, TASK_CONTROL_PERIOD_MS);
+    update_wall(&logic, event, 0, TASK_CONTROL_PERIOD_MS);
     pass = (logic.ground_recovery_seen == APP_FALSE &&
             logic.finish_event_consumed == APP_FALSE &&
             logic.wall_cycle_active != APP_FALSE);

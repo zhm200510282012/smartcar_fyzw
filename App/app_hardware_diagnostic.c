@@ -24,27 +24,27 @@ app_hardware_diagnostic_snapshot_t app_hardware_diagnostic_run_once(void)
     snapshot.encoder = bsp_encoder_read();
     snapshot.route_progress_status = (u8)track_route_event_progress_status();
 
-    (void)sprintf(line,
-                  "POWER raw=%u filt=%u cal=%u good=%u ARM=%u EMAG=%u,%u,%u,%u,%u IMU id=%u spi=%u ax=%d ay=%d az=%d pitch=%d ENC dl=%d dr=%d route=%u",
-                  snapshot.power.raw_adc,
-                  snapshot.power.filtered_adc,
-                  snapshot.power.calibration_valid,
-                  snapshot.power.power_good,
-                  snapshot.arm_requested,
-                  snapshot.emag.raw[0],
-                  snapshot.emag.raw[1],
-                  snapshot.emag.raw[2],
-                  snapshot.emag.raw[3],
-                  snapshot.emag.raw[4],
-                  snapshot.attitude.who_am_i,
-                  snapshot.attitude.spi_ok,
-                  snapshot.attitude.accel_raw[0],
-                  snapshot.attitude.accel_raw[1],
-                  snapshot.attitude.accel_raw[2],
-                  snapshot.attitude.pitch_cdeg,
-                  snapshot.encoder.left_delta_counts,
-                  snapshot.encoder.right_delta_counts,
-                  snapshot.route_progress_status);
+    sprintf(line,
+            "POWER raw=%u filt=%u cal=%u good=%u ARM=%u EMAG=%u,%u,%u,%u,%u IMU id=%u spi=%u ax=%d ay=%d az=%d pitch=%d ENC dl=%d dr=%d route=%u",
+            snapshot.power.raw_adc,
+            snapshot.power.filtered_adc,
+            snapshot.power.calibration_valid,
+            snapshot.power.power_good,
+            snapshot.arm_requested,
+            snapshot.emag.raw[0],
+            snapshot.emag.raw[1],
+            snapshot.emag.raw[2],
+            snapshot.emag.raw[3],
+            snapshot.emag.raw[4],
+            snapshot.attitude.who_am_i,
+            snapshot.attitude.spi_ok,
+            snapshot.attitude.accel_raw[0],
+            snapshot.attitude.accel_raw[1],
+            snapshot.attitude.accel_raw[2],
+            snapshot.attitude.pitch_cdeg,
+            snapshot.encoder.left_delta_counts,
+            snapshot.encoder.right_delta_counts,
+            snapshot.route_progress_status);
     bsp_debug_uart_write_line(line);
     return snapshot;
 }
