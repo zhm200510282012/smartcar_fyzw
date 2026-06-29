@@ -113,7 +113,9 @@ static void write_output_header(FILE *out)
           "steering_offset_us,steering_pulse_us,suction_mode,"
           "steering_left_pulse_us,steering_right_pulse_us,"
           "logical_suction_request,hardware_suction_output,adhesion_risk,"
-          "state_elapsed_ms,transition_candidate,transition_up_observed,kill_switch\n",
+          "state_elapsed_ms,transition_candidate,transition_up_observed,kill_switch,"
+          "track_mode,line_error_filtered,error_rate,fuzzy_kp,fuzzy_ki,fuzzy_kd,"
+          "left_speed_target,right_speed_target,left_speed_measured,right_speed_measured\n",
           out);
 }
 
@@ -125,7 +127,7 @@ static void write_output_line(FILE *out, const app_context_t *ctx, u32 now_ms)
     frame = app_telemetry_make_frame(ctx, now_ms);
     suction = bsp_suction_last_command();
     fprintf(out,
-            "%lu,%u,%u,%u,%d,%d,%d,%d,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u\n",
+            "%lu,%u,%u,%u,%d,%d,%d,%d,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
             (unsigned long)frame.timestamp_ms,
             (unsigned int)frame.app_state,
             (unsigned int)frame.surface_state,
@@ -144,7 +146,17 @@ static void write_output_line(FILE *out, const app_context_t *ctx, u32 now_ms)
             (unsigned int)ctx->state_elapsed_ms,
             (unsigned int)ctx->transition_candidate,
             (unsigned int)(ctx->surface_state == SURFACE_TRANSITION_UP || ctx->surface_state == SURFACE_WALL),
-            (unsigned int)ctx->kill_switch);
+            (unsigned int)ctx->kill_switch,
+            (unsigned int)frame.track_mode,
+            (int)frame.line_error_filtered,
+            (int)frame.error_rate,
+            (int)frame.fuzzy_kp,
+            (int)frame.fuzzy_ki,
+            (int)frame.fuzzy_kd,
+            (int)frame.left_speed_target_mm_s,
+            (int)frame.right_speed_target_mm_s,
+            (int)frame.left_speed_measured_mm_s,
+            (int)frame.right_speed_measured_mm_s);
 }
 
 static int run_tick_until(app_context_t *ctx, FILE *out, u32 target_time_ms)

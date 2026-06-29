@@ -55,7 +55,7 @@
         "GROUND_TRACK"
       ],
       "max_speed_cmd": 500,
-      "max_steering_cmd": 45,
+      "max_steering_cmd": 28,
       "max_logical_suction_request": 0,
       "max_hardware_suction_output": 0,
       "fault_state": ""
@@ -158,7 +158,7 @@
         "WALL_TRACK"
       ],
       "max_speed_cmd": 500,
-      "max_steering_cmd": 30,
+      "max_steering_cmd": 22,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
       "fault_state": ""

@@ -16,9 +16,11 @@
 #include "../Control/ctrl_line.h"
 #include "../Control/ctrl_profile.h"
 #include "../Control/ctrl_speed.h"
+#include "../Control/ctrl_fuzzy_steering.h"
 #include "../Control/ctrl_steering.h"
 #include "../Control/ctrl_vehicle.h"
 #include "../Track/track_features.h"
+#include "../Track/track_route_profile.h"
 #include "../Track/track_state_machine.h"
 #include "../Track/track_strategy.h"
 #include "../Track/track_surface_state.h"
@@ -31,6 +33,10 @@ static u32 g_last_control;
 static u32 g_last_track;
 static u32 g_last_health;
 static u32 g_last_ui;
+static track_mode_state_t g_track_mode_state;
+static ctrl_fuzzy_steering_state_t g_fuzzy_steering_state;
+static u8 g_line_filter_valid;
+static s16 g_prev_filtered_error;
 
 static u8 control_or_wall_active(app_state_t state)
 {
@@ -117,6 +123,91 @@ void app_scheduler_init(void)
     g_last_track = 0ul;
     g_last_health = 0ul;
     g_last_ui = 0ul;
+    g_line_filter_valid = APP_FALSE;
+    g_prev_filtered_error = 0;
+    track_route_profile_init(&g_track_mode_state);
+    ctrl_fuzzy_steering_init(&g_fuzzy_steering_state);
+}
+
+static void update_line_error_terms(app_context_t *ctx)
+{
+    s16 filtered;
+    if (ctx->emag.valid == APP_FALSE || ctx->emag.signal_quality < LINE_QUALITY_MIN) {
+        ctx->line_error_filtered = 0;
+        ctx->line_error_rate = 0;
+        g_line_filter_valid = APP_FALSE;
+        g_prev_filtered_error = 0;
+        return;
+    }
+
+    if (g_line_filter_valid == APP_FALSE) {
+        filtered = ctx->emag.line_error;
+        g_line_filter_valid = APP_TRUE;
+    } else {
+        filtered = (s16)((((s32)g_prev_filtered_error * 3l) + (s32)ctx->emag.line_error) / 4l);
+    }
+    ctx->line_error_filtered = filtered;
+    ctx->line_error_rate = (s16)(filtered - g_prev_filtered_error);
+    g_prev_filtered_error = filtered;
+}
+
+static void update_track_mode(app_context_t *ctx)
+{
+    track_mode_input_t input;
+    s32 speed_sum;
+
+    input.line_error = ctx->line_error_filtered;
+    input.error_rate = ctx->line_error_rate;
+    input.line_quality = ctx->emag.signal_quality;
+    input.surface_state = ctx->surface_state;
+    input.pitch_cdeg = ctx->attitude.pitch_cdeg;
+    input.pitch_rate_cdeg_s = 0;
+    speed_sum = (s32)ctx->encoder.left_speed_mm_s + (s32)ctx->encoder.right_speed_mm_s;
+    input.speed_mm_s = (s16)(speed_sum / 2l);
+    input.cross_confirmed = track_features_detect_crossing(&ctx->emag);
+    input.hex_confirmed = track_features_detect_hex_loop(&ctx->emag);
+    input.seesaw_confirmed = track_features_detect_seesaw(&ctx->attitude);
+    input.dt_ms = TASK_CONTROL_PERIOD_MS;
+
+    ctx->track_mode = track_route_profile_select(&g_track_mode_state, &input);
+    if (ctx->app_state == APP_STATE_GROUND_RECOVERY) {
+        ctx->track_mode = TRACK_MODE_RECOVERY;
+    } else if (ctx->app_state == APP_STATE_SEESAW_PASS) {
+        ctx->track_mode = TRACK_MODE_SEESAW;
+    }
+}
+
+static void update_fuzzy_steering(app_context_t *ctx)
+{
+    ctrl_fuzzy_steering_input_t input;
+    s16 offset;
+
+    input.mode = ctx->track_mode;
+    input.app_state = ctx->app_state;
+    input.line_error_filtered = ctx->line_error_filtered;
+    input.error_rate = ctx->line_error_rate;
+    input.signal_quality = ctx->emag.signal_quality;
+    input.dt_ms = TASK_CONTROL_PERIOD_MS;
+    input.outputs_allowed = app_safety_outputs_allowed(ctx);
+
+    offset = ctrl_fuzzy_steering_update(&g_fuzzy_steering_state, &input);
+    ctx->steering_offset_us = offset;
+    ctx->fuzzy_kp = g_fuzzy_steering_state.gain.kp;
+    ctx->fuzzy_ki = g_fuzzy_steering_state.gain.ki;
+    ctx->fuzzy_kd = g_fuzzy_steering_state.gain.kd;
+}
+
+static void reset_fuzzy_if_blocked(app_context_t *ctx)
+{
+    if (ctrl_fuzzy_steering_needs_reset(ctx->app_state,
+                                        ctx->track_mode,
+                                        ctx->emag.signal_quality,
+                                        app_safety_outputs_allowed(ctx)) != APP_FALSE) {
+        ctrl_fuzzy_steering_reset(&g_fuzzy_steering_state);
+        ctx->fuzzy_kp = g_fuzzy_steering_state.gain.kp;
+        ctx->fuzzy_ki = g_fuzzy_steering_state.gain.ki;
+        ctx->fuzzy_kd = g_fuzzy_steering_state.gain.kd;
+    }
 }
 
 void app_scheduler_run_due(app_context_t *ctx, u32 now_ms)
@@ -138,6 +229,7 @@ void app_scheduler_run_due(app_context_t *ctx, u32 now_ms)
 
         g_last_control = now_ms;
         ctx->emag = ctrl_line_update(ctx->emag);
+        update_line_error_terms(ctx);
         ctx->attitude = ctrl_attitude_update(ctx->attitude, TASK_CONTROL_PERIOD_MS);
         ctx->transition_candidate = read_transition_candidate();
         update_sensor_health(ctx, now_ms);
@@ -149,22 +241,28 @@ void app_scheduler_run_due(app_context_t *ctx, u32 now_ms)
 #endif
         app_state_machine_step(ctx, TASK_CONTROL_PERIOD_MS);
         update_sensor_health(ctx, now_ms);
+        update_track_mode(ctx);
 
         ctx->speed_limit_mm_s = ctrl_profile_speed_limit(ctx->surface_state, ctx->adhesion_risk);
-        target_speed_mm_s = track_strategy_target_speed(ctx->surface_state);
+        target_speed_mm_s = track_strategy_target_speed_for_mode(ctx->track_mode);
         if (target_speed_mm_s > ctx->speed_limit_mm_s) {
             target_speed_mm_s = ctx->speed_limit_mm_s;
         }
         if (app_safety_outputs_allowed(ctx) == APP_FALSE) {
             target_speed_mm_s = DRIVE_SAFE_ZERO;
         }
+        ctx->target_speed_mm_s = target_speed_mm_s;
+        ctx->left_speed_target_mm_s = target_speed_mm_s;
+        ctx->right_speed_target_mm_s = target_speed_mm_s;
         ctx->drive_command_native = ctrl_speed_command_native(target_speed_mm_s, ctx->encoder);
-        ctx->steering_offset_us = ctrl_steering_offset_us(ctx->emag.line_error, ctx->emag.signal_quality);
+        update_fuzzy_steering(ctx);
         ctrl_vehicle_update(ctx);
         ctrl_adhesion_update(ctx);
         app_safety_apply_profile(ctx, app_safety_select_profile(ctx));
+        reset_fuzzy_if_blocked(ctx);
         ctrl_vehicle_update(ctx);
         app_output_arbitrate(ctx);
+        reset_fuzzy_if_blocked(ctx);
         bsp_drive_apply_lr(ctx->left_drive_command_native, ctx->right_drive_command_native);
         bsp_steering_apply_pair(ctx->steering_left_pulse_us, ctx->steering_right_pulse_us);
         bsp_suction_apply(&ctx->suction_cmd);

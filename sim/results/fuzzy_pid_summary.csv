@@ -1,0 +1,11 @@
+scenario,pass,metric_a,metric_b,metric_c,notes
+S29,true,4,1000,0,membership boundaries ok
+S30,true,12,25,1,all rule outputs limited
+S31,true,122,239,210,straight gain below sharp curve
+S32,true,157,178,0,kp monotonic with larger error
+S33,true,164,187,0,kd increases or stays high on fast de
+S34,true,0,2,0,mode switch reset integral
+S35,true,42,0,0,line lost centers steering state
+S36,true,3,0,0,crossing conservative without route
+S37,true,500,180,210,omega and sharp speeds below straight
+S38,true,0,11,0,recovery clears wall integral

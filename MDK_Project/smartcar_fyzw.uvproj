@@ -451,6 +451,16 @@
               <FilePath>..\Control\ctrl_line.c</FilePath>
             </File>
             <File>
+              <FileName>ctrl_fuzzy_pid.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Control\ctrl_fuzzy_pid.c</FilePath>
+            </File>
+            <File>
+              <FileName>ctrl_fuzzy_steering.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Control\ctrl_fuzzy_steering.c</FilePath>
+            </File>
+            <File>
               <FileName>ctrl_attitude.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Control\ctrl_attitude.c</FilePath>
@@ -494,6 +504,11 @@
               <FileName>track_features.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Track\track_features.c</FilePath>
+            </File>
+            <File>
+              <FileName>track_route_profile.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Track\track_route_profile.c</FilePath>
             </File>
             <File>
               <FileName>track_surface_state.c</FileName>

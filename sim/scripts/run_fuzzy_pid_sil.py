@@ -1,0 +1,167 @@
+import csv
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+import build_host_sil
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+BUILD_DIR = REPO_ROOT / "build"
+RESULT_DIR = REPO_ROOT / "sim" / "results"
+
+FUZZY_SOURCES = [
+    "sim/host/fuzzy_pid_runner.c",
+    "Control/ctrl_signal.c",
+    "Control/ctrl_fuzzy_pid.c",
+    "Control/ctrl_fuzzy_steering.c",
+    "Track/track_route_profile.c",
+    "Track/track_strategy.c",
+]
+
+
+def exe_path():
+    suffix = ".exe" if os.name == "nt" else ""
+    return REPO_ROOT / "sim" / "host" / f"fuzzy_pid_runner{suffix}"
+
+
+def build_runner():
+    compiler = build_host_sil.find_compiler()
+    BUILD_DIR.mkdir(parents=True, exist_ok=True)
+    log_path = BUILD_DIR / "fuzzy_pid_runner_build.log"
+    if compiler is None:
+        log_path.write_text(
+            "No host C compiler found. Tried HOST_SIL_CC, cl, gcc, clang, cc, and known existing local compiler paths.\n",
+            encoding="utf-8",
+        )
+        return None, 2
+
+    source_paths = [str(REPO_ROOT / source) for source in FUZZY_SOURCES]
+    output = exe_path()
+    if build_host_sil.compiler_kind(compiler) == "msvc":
+        cmd = (
+            compiler
+            + [
+                "/nologo",
+                "/W4",
+                "/WX",
+                "/DHOST_SIL=1",
+                "/I.",
+                "/IApp",
+                "/IControl",
+                "/ITrack",
+                "/Isim/host",
+            ]
+            + source_paths
+            + ["/Fe:" + str(output)]
+        )
+    else:
+        cmd = (
+            compiler
+            + [
+                "-std=c99",
+                "-Wall",
+                "-Wextra",
+                "-Werror",
+                "-DHOST_SIL=1",
+                "-I.",
+                "-IApp",
+                "-IControl",
+                "-ITrack",
+                "-Isim/host",
+                "-o",
+                str(output),
+            ]
+            + source_paths
+        )
+
+    result = subprocess.run(
+        cmd,
+        cwd=str(REPO_ROOT),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    log_path.write_text(
+        "COMMAND:\n"
+        + " ".join(cmd)
+        + "\n\nOUTPUT:\n"
+        + result.stdout
+        + f"\nEXIT_CODE: {result.returncode}\n",
+        encoding="utf-8",
+    )
+    if result.returncode != 0:
+        return None, result.returncode
+    return output, 0
+
+
+def read_raw_results(path):
+    with path.open(newline="", encoding="utf-8") as handle:
+        return list(csv.DictReader(handle))
+
+
+def write_summary(rows):
+    failed = [row for row in rows if row["pass"].lower() != "true"]
+    scenarios = {}
+    for row in rows:
+        scenarios[row["scenario"]] = {
+            "pass": row["pass"].lower() == "true",
+            "metric_a": int(row["metric_a"]),
+            "metric_b": int(row["metric_b"]),
+            "metric_c": int(row["metric_c"]),
+            "notes": row["notes"],
+        }
+    summary = {
+        "scenario_count": len(rows),
+        "passed": len(rows) - len(failed),
+        "failed": len(failed),
+        "scenarios": scenarios,
+        "safety": {
+            "suction_hw_verified": 0,
+            "hardware_suction_output_max": 0,
+            "real_bench_pass": False,
+            "real_wall_pass": False,
+        },
+    }
+    (RESULT_DIR / "fuzzy_pid_summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    with (RESULT_DIR / "fuzzy_pid_summary.csv").open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=["scenario", "pass", "metric_a", "metric_b", "metric_c", "notes"],
+        )
+        writer.writeheader()
+        writer.writerows(rows)
+    return summary
+
+
+def main():
+    RESULT_DIR.mkdir(parents=True, exist_ok=True)
+    runner, code = build_runner()
+    if code != 0 or runner is None:
+        return code or 2
+
+    raw_csv = RESULT_DIR / "fuzzy_pid_raw.csv"
+    result = subprocess.run(
+        [str(runner), str(raw_csv)],
+        cwd=str(REPO_ROOT),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if result.returncode != 0:
+        sys.stdout.write(result.stdout)
+    rows = read_raw_results(raw_csv)
+    summary = write_summary(rows)
+    print(f"Fuzzy PID Host-SIL scenarios: {summary['passed']}/{summary['scenario_count']} passed")
+    if summary["failed"] != 0:
+        for scenario, item in summary["scenarios"].items():
+            if not item["pass"]:
+                print(f"{scenario}: {item['notes']}")
+        return 1
+    return result.returncode
+
+
+if __name__ == "__main__":
+    sys.exit(main())

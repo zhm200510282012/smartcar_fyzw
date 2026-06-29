@@ -55,7 +55,7 @@
       ],
       "output_csv": "sim\\results\\full_guard_S02_ground_curve_left_right.csv",
       "max_speed_cmd": 500,
-      "max_steering_cmd": 45,
+      "max_steering_cmd": 28,
       "max_logical_suction_request": 0,
       "max_hardware_suction_output": 0,
       "fault_state": ""
@@ -160,7 +160,7 @@
       ],
       "output_csv": "sim\\results\\full_logical_wall_S06_curved_or_cylinder_mode.csv",
       "max_speed_cmd": 500,
-      "max_steering_cmd": 30,
+      "max_steering_cmd": 27,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
       "fault_state": ""
@@ -472,7 +472,7 @@
       ],
       "output_csv": "sim\\results\\full_logical_wall_S19_kill_overrides_all_outputs.csv",
       "max_speed_cmd": 500,
-      "max_steering_cmd": 30,
+      "max_steering_cmd": 22,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
       "fault_state": "HARD_FAULT"

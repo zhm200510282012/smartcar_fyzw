@@ -1,0 +1,83 @@
+{
+  "scenario_count": 10,
+  "passed": 10,
+  "failed": 0,
+  "scenarios": {
+    "S29": {
+      "pass": true,
+      "metric_a": 4,
+      "metric_b": 1000,
+      "metric_c": 0,
+      "notes": "membership boundaries ok"
+    },
+    "S30": {
+      "pass": true,
+      "metric_a": 12,
+      "metric_b": 25,
+      "metric_c": 1,
+      "notes": "all rule outputs limited"
+    },
+    "S31": {
+      "pass": true,
+      "metric_a": 122,
+      "metric_b": 239,
+      "metric_c": 210,
+      "notes": "straight gain below sharp curve"
+    },
+    "S32": {
+      "pass": true,
+      "metric_a": 157,
+      "metric_b": 178,
+      "metric_c": 0,
+      "notes": "kp monotonic with larger error"
+    },
+    "S33": {
+      "pass": true,
+      "metric_a": 164,
+      "metric_b": 187,
+      "metric_c": 0,
+      "notes": "kd increases or stays high on fast de"
+    },
+    "S34": {
+      "pass": true,
+      "metric_a": 0,
+      "metric_b": 2,
+      "metric_c": 0,
+      "notes": "mode switch reset integral"
+    },
+    "S35": {
+      "pass": true,
+      "metric_a": 42,
+      "metric_b": 0,
+      "metric_c": 0,
+      "notes": "line lost centers steering state"
+    },
+    "S36": {
+      "pass": true,
+      "metric_a": 3,
+      "metric_b": 0,
+      "metric_c": 0,
+      "notes": "crossing conservative without route"
+    },
+    "S37": {
+      "pass": true,
+      "metric_a": 500,
+      "metric_b": 180,
+      "metric_c": 210,
+      "notes": "omega and sharp speeds below straight"
+    },
+    "S38": {
+      "pass": true,
+      "metric_a": 0,
+      "metric_b": 11,
+      "metric_c": 0,
+      "notes": "recovery clears wall integral"
+    }
+  },
+  "safety": {
+    "suction_hw_verified": 0,
+    "hardware_suction_output_max": 0,
+    "real_bench_pass": false,
+    "real_wall_pass": false
+  }
+}

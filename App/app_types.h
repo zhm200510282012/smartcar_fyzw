@@ -24,6 +24,21 @@ typedef enum {
 } surface_state_t;
 
 typedef enum {
+    TRACK_MODE_STRAIGHT = 0,
+    TRACK_MODE_NORMAL_CURVE,
+    TRACK_MODE_SHARP_CURVE,
+    TRACK_MODE_CROSSING,
+    TRACK_MODE_OMEGA,
+    TRACK_MODE_HEX_LOOP,
+    TRACK_MODE_TRANSITION,
+    TRACK_MODE_WALL,
+    TRACK_MODE_CYLINDER,
+    TRACK_MODE_SEESAW,
+    TRACK_MODE_LINE_LOST,
+    TRACK_MODE_RECOVERY
+} track_mode_t;
+
+typedef enum {
     APP_STATE_BOOT = 0,
     APP_STATE_SELF_CHECK,
     APP_STATE_SENSOR_CALIBRATION,
@@ -125,11 +140,20 @@ typedef struct {
     u8 transition_candidate;
     u8 kill_switch;
     u8 test_mode;
+    track_mode_t track_mode;
     u16 adhesion_risk;
     s16 speed_limit_mm_s;
+    s16 target_speed_mm_s;
+    s16 left_speed_target_mm_s;
+    s16 right_speed_target_mm_s;
     s16 drive_command_native;
     s16 left_drive_command_native;
     s16 right_drive_command_native;
+    s16 line_error_filtered;
+    s16 line_error_rate;
+    s16 fuzzy_kp;
+    s16 fuzzy_ki;
+    s16 fuzzy_kd;
     s16 steering_offset_us;
     u16 steering_pulse_us;
     u16 steering_left_pulse_us;

@@ -1,0 +1,21 @@
+HOST-SIL FUZZY PID UPGRADE VERIFICATION
+
+> C:\Users\zhm\miniconda3\python.exe sim/scripts/run_fuzzy_pid_sil.py
+Fuzzy PID Host-SIL scenarios: 10/10 passed
+EXIT_CODE: 0
+
+> C:\Users\zhm\miniconda3\python.exe sim/scripts/run_full_course_sil.py
+Full-course Host-SIL scenarios: 20/20 passed
+EXIT_CODE: 0
+
+> C:\Users\zhm\miniconda3\python.exe sim/scripts/run_p0_safety_gate.py
+P0 safety gate scenarios: 13/13 passed
+EXIT_CODE: 0
+
+> C:\Users\zhm\miniconda3\python.exe -m unittest sim.tests.test_fuzzy_pid_cli sim.tests.test_full_course_cli sim.tests.test_sil_cli
+...
+----------------------------------------------------------------------
+Ran 3 tests in 5.302s
+
+OK
+EXIT_CODE: 0
