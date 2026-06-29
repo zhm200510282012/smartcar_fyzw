@@ -1,7 +1,13 @@
 #ifndef COMPETITION_PROFILE_H
 #define COMPETITION_PROFILE_H
 
-/* User-facing competition tuning profile. Keep bench defaults conservative. */
+/*
+ * 竞赛车集中参数入口。
+ * 单位和默认值说明：
+ * - 速度均为 mm/s，脉宽均为 us，时间均为 ms。
+ * - 当前默认值是软件起点和离地/低速验证值，不是实车完整赛道标定值。
+ * - 后续调车优先只改本文件和 BSP/board_emag_map.h，避免在控制模块散落魔法数。
+ */
 
 #define LINE_DIRECTION_SIGN 1
 #define LINE_WEIGHT_SCALE 1
@@ -57,6 +63,19 @@
 #define FAN_ESC_PHYSICAL_OUTPUT_ENABLE 0
 #define WALL_RUN_ENABLE 0
 
+/* 路线事件来源：0=无自动事件，1=Host-SIL 注入，2=手动注入，3=编码器里程脚本。 */
+#define ROUTE_EVENT_SOURCE_NONE 0u
+#define ROUTE_EVENT_SOURCE_HOST_SIL 1u
+#define ROUTE_EVENT_SOURCE_MANUAL_INJECT 2u
+#define ROUTE_EVENT_SOURCE_PROGRESS_SCRIPT 3u
+#define ROUTE_EVENT_SOURCE_DEFAULT ROUTE_EVENT_SOURCE_NONE
+
+/* 里程脚本默认关闭；距离单位 mm，0 表示该事件不自动触发。 */
+#define ROUTE_PROGRESS_SCRIPT_ENABLE 0
+#define ROUTE_WALL_APPROACH_DISTANCE_MM 0L
+#define ROUTE_WALL_EXIT_DISTANCE_MM 0L
+#define ROUTE_FINISH_DISTANCE_MM 0L
+
 #define IMU_PITCH_SIGN 1
 #define IMU_PITCH_OFFSET_CDEG 0
 #define IMU_WALL_ENTER_CDEG 4500
@@ -91,6 +110,17 @@
 
 #if (WALL_RUN_ENABLE != 0) && (WALL_RUN_ENABLE != 1)
 #error WALL_RUN_ENABLE must be 0 or 1.
+#endif
+
+#if (ROUTE_EVENT_SOURCE_DEFAULT != ROUTE_EVENT_SOURCE_NONE) && \
+    (ROUTE_EVENT_SOURCE_DEFAULT != ROUTE_EVENT_SOURCE_HOST_SIL) && \
+    (ROUTE_EVENT_SOURCE_DEFAULT != ROUTE_EVENT_SOURCE_MANUAL_INJECT) && \
+    (ROUTE_EVENT_SOURCE_DEFAULT != ROUTE_EVENT_SOURCE_PROGRESS_SCRIPT)
+#error ROUTE_EVENT_SOURCE_DEFAULT must be one of the ROUTE_EVENT_SOURCE_* values.
+#endif
+
+#if (ROUTE_PROGRESS_SCRIPT_ENABLE != 0) && (ROUTE_PROGRESS_SCRIPT_ENABLE != 1)
+#error ROUTE_PROGRESS_SCRIPT_ENABLE must be 0 or 1.
 #endif
 
 #if (IMU_PITCH_SIGN != 1) && (IMU_PITCH_SIGN != -1)

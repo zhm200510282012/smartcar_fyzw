@@ -48,6 +48,24 @@ typedef enum {
 } track_mode_t;
 
 typedef enum {
+    TRACK_COURSE_START = 0,
+    TRACK_COURSE_GROUND_STRAIGHT,
+    TRACK_COURSE_NORMAL_CURVE,
+    TRACK_COURSE_SHARP_CURVE,
+    TRACK_COURSE_CROSSING,
+    TRACK_COURSE_OMEGA,
+    TRACK_COURSE_HEX_LOOP,
+    TRACK_COURSE_WALL_APPROACH,
+    TRACK_COURSE_FAN_PRECHARGE,
+    TRACK_COURSE_TRANSITION_UP,
+    TRACK_COURSE_WALL_TRACK,
+    TRACK_COURSE_CYLINDER_TRACK,
+    TRACK_COURSE_TRANSITION_DOWN,
+    TRACK_COURSE_GROUND_RECOVERY,
+    TRACK_COURSE_FINISH
+} track_course_segment_t;
+
+typedef enum {
     APP_STATE_BOOT = 0,
     APP_STATE_SELF_CHECK,
     APP_STATE_SENSOR_CALIBRATION,
@@ -183,6 +201,7 @@ typedef struct {
     u8 kill_switch;
     u8 test_mode;
     track_mode_t track_mode;
+    track_course_segment_t course_segment;
     u16 adhesion_risk;
     s16 speed_limit_mm_s;
     s16 target_speed_mm_s;

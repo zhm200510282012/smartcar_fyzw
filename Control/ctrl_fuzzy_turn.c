@@ -1,3 +1,9 @@
+/*
+ * 模块职责：地面/墙面统一转向控制，输出差速转向量。
+ * 输入：line_error_filtered、error_rate、track_mode 和 app_state。
+ * 输出：turn_delta_mm_s；FUZZY_ENABLE=0 时使用基础 PD，=1 时才启用模糊自整定。
+ * 关系：本模块只修正左右速度目标，不直接控制 PWM、风机或历史舵机。
+ */
 #include "ctrl_fuzzy_turn.h"
 #include "ctrl_signal.h"
 

@@ -1,6 +1,13 @@
 #ifndef TRACK_WALL_LOGIC_H
 #define TRACK_WALL_LOGIC_H
 
+/*
+ * 模块职责：上墙/墙面/下墙逻辑状态机。
+ * 输入：route_event、IMU pitch、丢线和附着风险。
+ * 输出：墙面状态、风机逻辑状态、速度限制和 drive_allowed。
+ * 关系：真实上墙由 WALL_RUN_ENABLE 控制；Host-SIL 可用逻辑墙面 profile 验证时序。
+ */
+
 #include "../App/app_types.h"
 #include "../App/app_config.h"
 #include "track_route_event.h"

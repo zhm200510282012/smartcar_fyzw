@@ -1,3 +1,9 @@
+/*
+ * 模块职责：五路电磁 A-E 加权重心循迹。
+ * 输入：norm[0..4]，顺序为车头方向从左到右 A/B/C/D/E。
+ * 输出：line_error、line_quality、line_lost；line_error 正负方向由 LINE_DIRECTION_SIGN 统一翻转。
+ * 单位：权重内部放大 1000 倍，过滤后的误差由 scheduler 继续求变化率。
+ */
 #include "ctrl_line.h"
 
 static const s16 g_emag_weights[EMAG_CHANNEL_COUNT] = {

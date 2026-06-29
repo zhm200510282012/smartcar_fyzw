@@ -80,7 +80,7 @@ SCENARIOS = [
     {"name": "S02_ground_curve_left_right", "profile": "guard", "kind": "ground_curve", "expect": "ground_ok"},
     {"name": "S03_precharge_before_transition", "profile": "logical_wall", "kind": "up_to_wall", "expect": "wall_track"},
     {"name": "S04_wall_track", "profile": "logical_wall", "kind": "wall_hold", "expect": "wall_track"},
-    {"name": "S05_wall_to_ground_transition", "profile": "logical_wall", "kind": "up_wall_down", "expect": "finished"},
+    {"name": "S05_wall_to_ground_transition", "profile": "logical_wall", "kind": "up_wall_down", "expect": "ground_after_recovery"},
     {"name": "S06_curved_or_cylinder_mode", "profile": "logical_wall", "kind": "curved_cylinder", "expect": "cylinder_track"},
     {"name": "S07_stale_sensor_on_ground", "profile": "guard", "kind": "ground_imu_stale", "expect": "ground_fault"},
     {"name": "S08_stale_sensor_on_wall", "profile": "logical_wall", "kind": "wall_imu_stale", "expect": "wall_failsafe"},
@@ -90,7 +90,7 @@ SCENARIOS = [
     {"name": "S12_emag_loss", "profile": "logical_wall", "kind": "wall_emag_loss", "expect": "wall_failsafe"},
     {"name": "S13_imu_abnormal", "profile": "logical_wall", "kind": "imu_invalid", "expect": "wall_failsafe"},
     {"name": "S14_unarmed_steering_centered", "profile": "guard", "kind": "unarmed_ground", "expect": "centered"},
-    {"name": "S15_finished_steering_centered", "profile": "logical_wall", "kind": "up_wall_down", "expect": "finished_centered"},
+    {"name": "S15_ground_recovery_returns_ground", "profile": "logical_wall", "kind": "up_wall_down", "expect": "ground_after_recovery"},
     {"name": "S16_illegal_state_hard_fault", "profile": "guard", "kind": "illegal_state", "expect": "hard_fault"},
     {"name": "S17_transition_down_no_rebound_up", "profile": "logical_wall", "kind": "down_rebound", "expect": "no_rebound"},
     {"name": "S18_single_frame_imu_spike_rejection", "profile": "guard", "kind": "single_imu_spike", "expect": "spike_rejected"},
@@ -104,6 +104,8 @@ def duration_for(kind):
         return 1200
     if kind == "transition_timeout":
         return 4600
+    if kind == "up_wall_down":
+        return 3800
     if kind == "down_rebound":
         return 5000
     if kind == "illegal_state":
@@ -176,6 +178,8 @@ def line_error_for(kind, t):
 
 
 def candidate_for(kind, t):
+    if kind in {"up_wall_down", "down_rebound"}:
+        return 1 if 220 <= t < 1500 else 0
     transition_kinds = {
         "up_to_wall",
         "wall_hold",
@@ -326,7 +330,7 @@ def assert_expectation(scenario, rows, sequence):
     if scenario["profile"] == "guard" and max_int(rows, "logical_suction_request") != 0:
         failures.append("guard profile produced logical suction request")
     if scenario["profile"] == "logical_wall" and scenario["kind"] not in {"kill_on_wall"}:
-        if expect not in {"wall_failsafe", "finished_centered", "finished", "cylinder_track", "wall_track", "no_rebound"}:
+        if expect not in {"wall_failsafe", "finished_centered", "finished", "ground_after_recovery", "cylinder_track", "wall_track", "no_rebound"}:
             pass
 
     if scenario["name"] == "S03_precharge_before_transition":
@@ -351,6 +355,18 @@ def assert_expectation(scenario, rows, sequence):
     elif expect == "finished":
         if "FINISHED" not in seq:
             failures.append("FINISHED not reached")
+    elif expect == "ground_after_recovery":
+        for required in ("WALL_TRACK", "TRANSITION_DOWN", "GROUND_RECOVERY"):
+            if required not in seq:
+                failures.append(f"{required} not reached")
+        if "FINISHED" in seq:
+            failures.append("FINISHED reached without FINISH route event")
+        if "GROUND_RECOVERY" in sequence:
+            index = sequence.index("GROUND_RECOVERY")
+            if "GROUND_TRACK" not in sequence[index + 1:]:
+                failures.append("GROUND_TRACK not reached after GROUND_RECOVERY")
+        if seq & {"GROUND_FAULT", "WALL_FAILSAFE_HOLD", "HARD_FAULT"}:
+            failures.append("unexpected fault state")
     elif expect == "cylinder_track":
         if "CYLINDER_TRACK" not in seq:
             failures.append("CYLINDER_TRACK not reached")

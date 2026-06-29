@@ -13,7 +13,7 @@ BUILD_DIR = REPO_ROOT / "build"
 RESULT_DIR = REPO_ROOT / "sim" / "results"
 
 SOURCES = [
-    "sim/host/differential_wall_logic_runner.c",
+    "sim/host/final_full_course_runner.c",
     "sim/host/host_bsp.c",
     "App/app_scheduler.c",
     "App/app_output_arbitration.c",
@@ -44,13 +44,13 @@ SOURCES = [
 
 def exe_path():
     suffix = ".exe" if os.name == "nt" else ""
-    return REPO_ROOT / "sim" / "host" / f"differential_wall_logic_runner{suffix}"
+    return REPO_ROOT / "sim" / "host" / f"final_full_course_runner{suffix}"
 
 
 def build_runner():
     compiler = build_host_sil.find_compiler()
     BUILD_DIR.mkdir(parents=True, exist_ok=True)
-    log_path = BUILD_DIR / "differential_wall_logic_runner_build.log"
+    log_path = BUILD_DIR / "final_full_course_runner_build.log"
     if compiler is None:
         log_path.write_text(
             "No host C compiler found. Tried HOST_SIL_CC, cl, gcc, clang, cc, and known existing local compiler paths.\n",
@@ -144,13 +144,14 @@ def write_summary(rows):
         "scenarios": scenarios,
         "safety": {
             "fan_esc_physical_output_enable": 0,
-            "hardware_fan_output_max": scenarios.get("W10", {}).get("metric_b", 0),
+            "wall_run_enable": 0,
+            "hardware_fan_output_max": scenarios.get("F02", {}).get("metric_b", 0),
             "real_bench_pass": False,
             "real_wall_pass": False,
         },
     }
-    (RESULT_DIR / "differential_wall_logic_summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
-    with (RESULT_DIR / "differential_wall_logic_summary.csv").open("w", newline="", encoding="utf-8") as handle:
+    (RESULT_DIR / "final_full_course_summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    with (RESULT_DIR / "final_full_course_summary.csv").open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(
             handle,
             fieldnames=["scenario", "pass", "metric_a", "metric_b", "metric_c", "notes"],
@@ -164,10 +165,10 @@ def main():
     RESULT_DIR.mkdir(parents=True, exist_ok=True)
     runner, code = build_runner()
     if code != 0 or runner is None:
-        print((BUILD_DIR / "differential_wall_logic_runner_build.log").read_text(encoding="utf-8", errors="replace"))
+        print((BUILD_DIR / "final_full_course_runner_build.log").read_text(encoding="utf-8", errors="replace"))
         return code or 2
 
-    raw_csv = RESULT_DIR / "differential_wall_logic_raw.csv"
+    raw_csv = RESULT_DIR / "final_full_course_raw.csv"
     result = subprocess.run(
         [str(runner), str(raw_csv)],
         cwd=str(REPO_ROOT),
@@ -177,7 +178,7 @@ def main():
     )
     rows = read_raw_results(raw_csv)
     summary = write_summary(rows)
-    print(f"Differential wall Host-SIL scenarios: {summary['passed']}/{summary['scenario_count']} passed")
+    print(f"Final full-course Host-SIL scenarios: {summary['passed']}/{summary['scenario_count']} passed")
     if result.returncode != 0 or summary["failed"] != 0:
         sys.stdout.write(result.stdout)
         for scenario, item in summary["scenarios"].items():

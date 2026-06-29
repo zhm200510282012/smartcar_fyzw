@@ -1,3 +1,8 @@
+/*
+ * 模块职责：AI8051U PWM2P_3(P2.2) 风机 ESC BSP。
+ * Host-SIL 只记录最后命令；真实 C251 使用 AI8051U PWM API 初始化 50 Hz 脉冲。
+ * 物理总开关关闭时，即使逻辑 request_us 变化，也禁能 PWM 并把 P2.2 拉到安全输出。
+ */
 #ifndef HOST_SIL
 #include "AI8051U_GPIO.h"
 #include "AI8051U_PWM.h"

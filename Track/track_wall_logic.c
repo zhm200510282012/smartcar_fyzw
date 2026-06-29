@@ -1,3 +1,8 @@
+/*
+ * 上墙必须经 WALL_APPROACH -> FAN_PRECHARGE -> TRANSITION_UP -> WALL_TRACK。
+ * 风机预充压用于给 ESC/风道建立响应时间；下墙 GROUND_RECOVERY 使用 RAMP_DOWN，
+ * 避免从墙面回地面时立刻撤掉逻辑附着请求。真实 P2.2 输出仍由物理总开关限制。
+ */
 #include "track_wall_logic.h"
 
 #if defined(HOST_SIL_LOGICAL_WALL_PROFILE)

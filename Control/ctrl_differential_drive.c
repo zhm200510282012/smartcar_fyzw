@@ -1,3 +1,9 @@
+/*
+ * 模块职责：把基础速度和转向差速量混成左右轮目标速度。
+ * 输入：base_speed_mm_s 与 turn_delta_mm_s。
+ * 输出：left/right_target_mm_s；公式为 left=base+sign*turn，right=base-sign*turn。
+ * 关系：本模块不直接写 PWM，后级 ctrl_speed 对左右轮分别做 PI。
+ */
 #include "ctrl_differential_drive.h"
 #include "ctrl_signal.h"
 

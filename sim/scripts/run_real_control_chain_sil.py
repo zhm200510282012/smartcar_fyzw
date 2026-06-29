@@ -36,6 +36,7 @@ SOURCES = [
     "Control/ctrl_transition.c",
     "Control/ctrl_vehicle.c",
     "Track/track_features.c",
+    "Track/track_full_course_profile.c",
     "Track/track_route_event.c",
     "Track/track_route_profile.c",
     "Track/track_state_machine.c",

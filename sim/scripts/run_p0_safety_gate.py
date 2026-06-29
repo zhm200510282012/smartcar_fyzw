@@ -89,7 +89,7 @@ def duration_for(kind):
     if kind == "transition_timeout":
         return 4600
     if kind == "up_wall_down":
-        return 2800
+        return 3800
     return 2600
 
 
@@ -144,6 +144,8 @@ def line_error_for(kind, t):
 
 
 def candidate_for(kind, t):
+    if kind == "up_wall_down":
+        return 1 if 220 <= t < 1500 else 0
     if kind in {
         "up_to_wall",
         "wall_hold",
@@ -344,10 +346,16 @@ def assert_expectation(scenario, rows, sequence):
                 failures.append(f"{required} not reached")
         if seq & FAULT_STATES:
             failures.append("unexpected fault state")
-    elif expect == "finished":
-        for required in ("WALL_TRACK", "TRANSITION_DOWN", "GROUND_RECOVERY", "FINISHED"):
+    elif expect == "ground_after_recovery":
+        for required in ("WALL_TRACK", "TRANSITION_DOWN", "GROUND_RECOVERY"):
             if required not in seq:
                 failures.append(f"{required} not reached")
+        if "FINISHED" in seq:
+            failures.append("FINISHED reached without FINISH route event")
+        if "GROUND_RECOVERY" in sequence:
+            index = sequence.index("GROUND_RECOVERY")
+            if "GROUND_TRACK" not in sequence[index + 1:]:
+                failures.append("GROUND_TRACK not reached after GROUND_RECOVERY")
         if seq & FAULT_STATES:
             failures.append("unexpected fault state")
     elif expect == "ground_fault":

@@ -1,0 +1,77 @@
+{
+  "scenario_count": 9,
+  "passed": 9,
+  "failed": 0,
+  "scenarios": {
+    "F01": {
+      "pass": true,
+      "metric_a": 32767,
+      "metric_b": 32767,
+      "metric_c": 15,
+      "notes": "complete full-course segment path reached"
+    },
+    "F02": {
+      "pass": true,
+      "metric_a": 1450,
+      "metric_b": 0,
+      "metric_c": 0,
+      "notes": "logical fan changes while physical P2.2 remains zero"
+    },
+    "F03": {
+      "pass": true,
+      "metric_a": 0,
+      "metric_b": 0,
+      "metric_c": 5,
+      "notes": "no WALL_APPROACH event keeps wall process idle"
+    },
+    "F04": {
+      "pass": true,
+      "metric_a": 5,
+      "metric_b": 16383,
+      "metric_c": 0,
+      "notes": "ground recovery without FINISH returns to ground track"
+    },
+    "F05": {
+      "pass": true,
+      "metric_a": 15,
+      "metric_b": 32767,
+      "metric_c": 0,
+      "notes": "finish event after recovery enters FINISHED"
+    },
+    "F06": {
+      "pass": true,
+      "metric_a": 0,
+      "metric_b": 0,
+      "metric_c": 0,
+      "notes": "fault and finish states zero both motors and physical fan"
+    },
+    "F07": {
+      "pass": true,
+      "metric_a": 90,
+      "metric_b": 170,
+      "metric_c": 0,
+      "notes": "turn controller changes left/right speed targets"
+    },
+    "F08": {
+      "pass": true,
+      "metric_a": 177,
+      "metric_b": 126,
+      "metric_c": 151,
+      "notes": "left/right speed PI outputs remain independent"
+    },
+    "F09": {
+      "pass": true,
+      "metric_a": 0,
+      "metric_b": 0,
+      "metric_c": 0,
+      "notes": "scheduler did not call legacy steering BSP path"
+    }
+  },
+  "safety": {
+    "fan_esc_physical_output_enable": 0,
+    "wall_run_enable": 0,
+    "hardware_fan_output_max": 0,
+    "real_bench_pass": false,
+    "real_wall_pass": false
+  }
+}

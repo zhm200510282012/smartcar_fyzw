@@ -1,3 +1,10 @@
+/*
+ * 模块职责：1 ms/2 ms 周期调度真实竞赛控制链。
+ * 输入：BSP 传感器采样、route_event、状态机和安全门。
+ * 输出：左右电机 native 命令、逻辑风机命令、当前全程赛段。
+ * 关系：转向只产生 turn_delta_mm_s，经差速和左右速度 PI 输出电机；不调用历史舵机 BSP。
+ * Host-SIL 可注入路线事件；真实 C251 默认 ROUTE_EVENT_SOURCE_NONE，不猜测未知赛道顺序。
+ */
 #include "app_scheduler.h"
 #include "app_build_profile.h"
 #include "app_config.h"
@@ -19,6 +26,7 @@
 #include "../Control/ctrl_profile.h"
 #include "../Control/ctrl_speed.h"
 #include "../Track/track_features.h"
+#include "../Track/track_full_course_profile.h"
 #include "../Track/track_route_event.h"
 #include "../Track/track_route_profile.h"
 #include "../Track/track_state_machine.h"
@@ -40,8 +48,10 @@ static line_filter_state_t g_line_filter_state;
 static speed_pi_state_t g_left_speed_pi;
 static speed_pi_state_t g_right_speed_pi;
 static track_wall_logic_t g_wall_logic;
+static track_full_course_profile_t g_full_course_profile;
 static ctrl_adhesion_state_t g_adhesion_state;
 static u16 g_line_lost_elapsed_ms;
+static u8 g_ground_recovery_seen;
 
 static u8 control_or_wall_active(app_state_t state)
 {
@@ -107,12 +117,21 @@ static u8 read_transition_candidate(void)
 #endif
 }
 
-static track_route_event_t read_route_event(void)
+static track_route_event_t read_host_route_event(void)
 {
 #ifdef HOST_SIL
     return host_bsp_route_event();
 #else
     return track_route_event_none();
+#endif
+}
+
+static u8 selected_route_event_source(void)
+{
+#ifdef HOST_SIL
+    return ROUTE_EVENT_SOURCE_HOST_SIL;
+#else
+    return ROUTE_EVENT_SOURCE_DEFAULT;
 #endif
 }
 
@@ -140,8 +159,10 @@ void app_scheduler_init(void)
     track_route_profile_init(&g_track_mode_state);
     ctrl_fuzzy_turn_init(&g_fuzzy_turn_state);
     track_wall_logic_init(&g_wall_logic);
+    track_full_course_profile_init(&g_full_course_profile);
     ctrl_adhesion_init(&g_adhesion_state);
     g_line_lost_elapsed_ms = 0u;
+    g_ground_recovery_seen = APP_FALSE;
 }
 
 static void update_line_error_terms(app_context_t *ctx)
@@ -246,12 +267,17 @@ static app_state_t app_state_from_wall_output(const track_wall_output_t *wall)
     }
 }
 
-static void apply_wall_output(app_context_t *ctx, const track_wall_output_t *wall)
+static void apply_wall_output(app_context_t *ctx,
+                              const track_wall_output_t *wall,
+                              const track_route_event_t *route_event)
 {
     if (wall == 0) {
         return;
     }
     ctx->wall_state = wall->state;
+    if (wall->state == TRACK_WALL_GROUND_RECOVERY) {
+        g_ground_recovery_seen = APP_TRUE;
+    }
     if (ctx->app_state == APP_STATE_GROUND_TRACK ||
         ctx->app_state == APP_STATE_TRANSITION_CANDIDATE ||
         ctx->app_state == APP_STATE_SUCTION_PRECHARGE ||
@@ -270,14 +296,50 @@ static void apply_wall_output(app_context_t *ctx, const track_wall_output_t *wal
         if (wall->state != TRACK_WALL_GROUND_TRACK) {
             ctx->state_elapsed_ms = wall->state_elapsed_ms;
         }
-        if (wall->state == TRACK_WALL_GROUND_RECOVERY &&
-            wall->state_elapsed_ms >= IMU_GROUND_CONFIRM_MS) {
+        if (route_event != 0 &&
+            route_event->finish_event != APP_FALSE &&
+            g_ground_recovery_seen != APP_FALSE) {
             ctx->app_state = APP_STATE_FINISHED;
             ctx->state_elapsed_ms = 0u;
         }
     }
     ctx->track_mode = wall->track_mode;
     ctx->speed_limit_mm_s = wall->speed_limit_mm_s;
+}
+
+static s32 abs_s32_local(s32 value)
+{
+    if (value < 0l) {
+        return -value;
+    }
+    return value;
+}
+
+static s32 encoder_progress_distance_mm(const encoder_sample_t *encoder)
+{
+    if (encoder == 0 || encoder->valid == APP_FALSE) {
+        return 0l;
+    }
+    return (abs_s32_local(encoder->left_count) + abs_s32_local(encoder->right_count)) / 2l;
+}
+
+static void update_full_course_segment(app_context_t *ctx,
+                                       const track_route_event_t *route_event)
+{
+    track_full_course_input_t input;
+
+    if (ctx == 0 || route_event == 0) {
+        return;
+    }
+    input.route_event = *route_event;
+    input.wall_state = ctx->wall_state;
+    input.track_mode = ctx->track_mode;
+    input.app_state = ctx->app_state;
+    input.line_error_filtered = ctx->line_error_filtered;
+    input.line_error_rate = ctx->line_error_rate;
+    input.line_quality = ctx->emag.line_quality;
+    input.progress_distance_mm = encoder_progress_distance_mm(&ctx->encoder);
+    ctx->course_segment = track_full_course_profile_update(&g_full_course_profile, &input);
 }
 
 static u8 update_line_lost_guard(app_context_t *ctx)
@@ -330,6 +392,7 @@ void app_scheduler_run_due(app_context_t *ctx, u32 now_ms)
         u8 outputs_allowed;
         u8 line_lost_stop;
         track_route_event_t route_event;
+        track_route_event_t host_route_event;
         track_wall_input_t wall_input;
         track_wall_output_t wall_output;
 
@@ -338,7 +401,10 @@ void app_scheduler_run_due(app_context_t *ctx, u32 now_ms)
         update_line_error_terms(ctx);
         ctx->attitude = ctrl_attitude_update(ctx->attitude, TASK_CONTROL_PERIOD_MS);
         ctx->transition_candidate = read_transition_candidate();
-        route_event = read_route_event();
+        host_route_event = read_host_route_event();
+        route_event = track_route_event_select(selected_route_event_source(),
+                                               &host_route_event,
+                                               &ctx->encoder);
         if (ctx->transition_candidate != APP_FALSE) {
             route_event.wall_approach_event = APP_TRUE;
         }
@@ -365,7 +431,8 @@ void app_scheduler_run_due(app_context_t *ctx, u32 now_ms)
         wall_input.dt_ms = TASK_CONTROL_PERIOD_MS;
         wall_output = track_wall_logic_update(&g_wall_logic, &wall_input);
         update_track_mode(ctx);
-        apply_wall_output(ctx, &wall_output);
+        apply_wall_output(ctx, &wall_output, &route_event);
+        update_full_course_segment(ctx, &route_event);
 
         if (ctx->speed_limit_mm_s <= 0 ||
             ctx->speed_limit_mm_s > ctrl_profile_speed_limit(ctx->surface_state, ctx->adhesion_risk)) {

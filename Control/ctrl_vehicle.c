@@ -1,3 +1,4 @@
+/* historical / inactive / not used by runtime: final car uses differential drive, not servo pulse arbitration. */
 #include "ctrl_vehicle.h"
 #include "ctrl_signal.h"
 

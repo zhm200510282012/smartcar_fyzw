@@ -511,6 +511,11 @@
               <FilePath>..\Track\track_route_profile.c</FilePath>
             </File>
             <File>
+              <FileName>track_full_course_profile.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Track\track_full_course_profile.c</FilePath>
+            </File>
+            <File>
               <FileName>track_route_event.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Track\track_route_event.c</FilePath>

@@ -129,7 +129,7 @@
         "WALL_TRACK",
         "TRANSITION_DOWN",
         "GROUND_RECOVERY",
-        "FINISHED"
+        "GROUND_TRACK"
       ],
       "output_csv": "sim\\results\\full_logical_wall_S05_wall_to_ground_transition.csv",
       "max_speed_cmd": 145,
@@ -353,8 +353,8 @@
       "max_hardware_suction_output": 0,
       "fault_state": ""
     },
-    "S15_finished_steering_centered": {
-      "name": "S15_finished_steering_centered",
+    "S15_ground_recovery_returns_ground": {
+      "name": "S15_ground_recovery_returns_ground",
       "profile": "logical_wall",
       "pass": true,
       "notes": "ok; surfaces=GROUND/TRANSITION_DOWN/TRANSITION_UP/UNKNOWN/WALL",
@@ -372,9 +372,9 @@
         "WALL_TRACK",
         "TRANSITION_DOWN",
         "GROUND_RECOVERY",
-        "FINISHED"
+        "GROUND_TRACK"
       ],
-      "output_csv": "sim\\results\\full_logical_wall_S15_finished_steering_centered.csv",
+      "output_csv": "sim\\results\\full_logical_wall_S15_ground_recovery_returns_ground.csv",
       "max_speed_cmd": 145,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1450,

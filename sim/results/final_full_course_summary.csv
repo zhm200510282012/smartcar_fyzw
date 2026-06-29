@@ -1,0 +1,10 @@
+scenario,pass,metric_a,metric_b,metric_c,notes
+F01,true,32767,32767,15,complete full-course segment path reached
+F02,true,1450,0,0,logical fan changes while physical P2.2 remains zero
+F03,true,0,0,5,no WALL_APPROACH event keeps wall process idle
+F04,true,5,16383,0,ground recovery without FINISH returns to ground track
+F05,true,15,32767,0,finish event after recovery enters FINISHED
+F06,true,0,0,0,fault and finish states zero both motors and physical fan
+F07,true,90,170,0,turn controller changes left/right speed targets
+F08,true,177,126,151,left/right speed PI outputs remain independent
+F09,true,0,0,0,scheduler did not call legacy steering BSP path

@@ -58,6 +58,7 @@ void app_state_machine_init(app_context_t *ctx)
     ctx->kill_switch = APP_FALSE;
     ctx->test_mode = APP_TEST_MODE;
     ctx->track_mode = TRACK_MODE_STRAIGHT;
+    ctx->course_segment = TRACK_COURSE_START;
     ctx->adhesion_risk = 1000u;
     ctx->speed_limit_mm_s = DRIVE_SAFE_ZERO;
     ctx->target_speed_mm_s = DRIVE_SAFE_ZERO;
@@ -207,7 +208,7 @@ void app_state_machine_step(app_context_t *ctx, u16 dt_ms)
         if (!sensors_ready(ctx) || transition_up_observed(ctx) || cylinder_observed(ctx)) {
             ctx->faults = (fault_code_t)(ctx->faults | FAULT_SENSOR_STALE);
         } else if (ctx->state_elapsed_ms >= GROUND_CONFIRM_TIME_MS && ground_observed(ctx)) {
-            enter_state(ctx, APP_STATE_FINISHED);
+            enter_state(ctx, APP_STATE_GROUND_TRACK);
         }
         break;
     case APP_STATE_SEESAW_PASS:

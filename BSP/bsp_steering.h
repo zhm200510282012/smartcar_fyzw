@@ -1,6 +1,8 @@
 #ifndef BSP_STEERING_H
 #define BSP_STEERING_H
 
+/* historical / inactive / not used by runtime: final differential car does not call this BSP path. */
+
 #include "../App/app_types.h"
 
 void bsp_steering_init(void);

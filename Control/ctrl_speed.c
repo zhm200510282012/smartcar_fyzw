@@ -1,3 +1,9 @@
+/*
+ * 模块职责：左右轮独立速度 PI。
+ * 输入：左右目标速度、编码器测得速度，单位 mm/s。
+ * 输出：左右 native PWM/方向命令；encoder invalid 时清积分并归零。
+ * 说明：积分限幅防止长时间饱和，输出限幅和加速度限幅用于离地低功率起步。
+ */
 #include "ctrl_speed.h"
 
 static s32 clamp_s32(s32 value, s32 min_value, s32 max_value)

@@ -1,0 +1,26 @@
+﻿
+===== final_full_course =====
+Final full-course Host-SIL scenarios: 9/9 passed
+EXIT_CODE: 0
+===== differential_wall_logic =====
+Differential wall Host-SIL scenarios: 20/20 passed
+EXIT_CODE: 0
+===== real_control_chain =====
+Real control chain Host-SIL scenarios: 10/10 passed
+EXIT_CODE: 0
+===== p0_safety_gate =====
+P0 safety gate scenarios: 13/13 passed
+EXIT_CODE: 0
+===== full_course_legacy =====
+Full-course Host-SIL scenarios: 20/20 passed
+EXIT_CODE: 0
+===== fuzzy_pid =====
+Fuzzy PID Host-SIL scenarios: 10/10 passed
+EXIT_CODE: 0
+===== python_unittest =====
+......
+----------------------------------------------------------------------
+Ran 6 tests in 9.515s
+System.Management.Automation.RemoteException
+OK
+EXIT_CODE: 0

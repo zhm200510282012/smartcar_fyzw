@@ -3,7 +3,7 @@
   {"name": "S02_ground_curve_left_right", "profile": "guard", "kind": "ground_curve", "expect": "ground_ok"},
   {"name": "S03_ground_to_wall_transition_radius", "profile": "logical_wall", "kind": "up_to_wall", "expect": "wall_track"},
   {"name": "S04_vertical_wall_track", "profile": "logical_wall", "kind": "wall_hold", "expect": "wall_track"},
-  {"name": "S05_wall_to_ground_transition", "profile": "logical_wall", "kind": "up_wall_down", "expect": "finished"},
+  {"name": "S05_wall_to_ground_transition", "profile": "logical_wall", "kind": "up_wall_down", "expect": "ground_after_recovery"},
   {"name": "S06_cylindrical_or_curved_surface", "profile": "logical_wall", "kind": "curved_wall", "expect": "wall_track"},
   {"name": "S07_sensor_stale_on_ground", "profile": "guard", "kind": "ground_imu_stale", "expect": "ground_fault"},
   {"name": "S08_sensor_stale_on_wall", "profile": "logical_wall", "kind": "wall_imu_stale", "expect": "wall_failsafe"},

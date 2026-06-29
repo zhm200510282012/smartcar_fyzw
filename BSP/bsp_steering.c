@@ -1,3 +1,4 @@
+/* historical / inactive / not used by runtime: retained only for old reference tests, not scheduler output. */
 #ifndef HOST_SIL
 #include "AI8051U_GPIO.h"
 #include "AI8051U_PWM.h"
