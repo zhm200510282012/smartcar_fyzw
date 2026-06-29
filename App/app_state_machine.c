@@ -33,6 +33,11 @@ static u8 wall_observed(const app_context_t *ctx)
     return (ctx->surface_state == SURFACE_WALL);
 }
 
+static u8 cylinder_observed(const app_context_t *ctx)
+{
+    return (ctx->surface_state == SURFACE_CYLINDER);
+}
+
 static u8 transition_down_observed(const app_context_t *ctx)
 {
     return (ctx->surface_state == SURFACE_TRANSITION_DOWN || ctx->surface_state == SURFACE_GROUND);
@@ -50,12 +55,17 @@ void app_state_machine_init(app_context_t *ctx)
     ctx->manual_arm = APP_FALSE;
     ctx->manual_suction_authorize = APP_FALSE;
     ctx->transition_candidate = APP_FALSE;
+    ctx->kill_switch = APP_FALSE;
     ctx->test_mode = APP_TEST_MODE;
     ctx->adhesion_risk = 1000u;
     ctx->speed_limit_mm_s = DRIVE_SAFE_ZERO;
     ctx->drive_command_native = DRIVE_SAFE_ZERO;
+    ctx->left_drive_command_native = DRIVE_SAFE_ZERO;
+    ctx->right_drive_command_native = DRIVE_SAFE_ZERO;
     ctx->steering_offset_us = 0;
     ctx->steering_pulse_us = STEERING_SAFE_CENTER_US;
+    ctx->steering_left_pulse_us = STEERING_SAFE_CENTER_US;
+    ctx->steering_right_pulse_us = STEERING_SAFE_CENTER_US;
     ctx->suction_cmd.mode = SUCTION_OFF;
     ctx->suction_cmd.command_native = SUCTION_SAFE_OFF_NATIVE;
     ctx->suction_cmd.armed = APP_FALSE;
@@ -85,9 +95,9 @@ void app_state_machine_step(app_context_t *ctx, u16 dt_ms)
 
     switch (ctx->app_state) {
     case APP_STATE_BOOT:
-        enter_state(ctx, APP_STATE_SELF_TEST);
+        enter_state(ctx, APP_STATE_SELF_CHECK);
         break;
-    case APP_STATE_SELF_TEST:
+    case APP_STATE_SELF_CHECK:
         if (ctx->health.power_ok) {
             enter_state(ctx, APP_STATE_SENSOR_CALIBRATION);
         }
@@ -103,13 +113,25 @@ void app_state_machine_step(app_context_t *ctx, u16 dt_ms)
         }
         break;
     case APP_STATE_ARMED_GROUND:
+        if (sensors_ready(ctx) && ground_observed(ctx)) {
+            enter_state(ctx, APP_STATE_GROUND_TRACK);
+        }
+        break;
+    case APP_STATE_GROUND_TRACK:
         if (ctx->manual_suction_authorize && sensors_ready(ctx) && transition_candidate_detected(ctx)) {
             if (APP_WALL_STATE_CAPABLE != 0) {
-                enter_state(ctx, APP_STATE_SUCTION_PRECHARGE);
+                enter_state(ctx, APP_STATE_TRANSITION_CANDIDATE);
             } else {
                 ctx->faults = (fault_code_t)(ctx->faults | FAULT_SUCTION_LOCKOUT);
                 enter_state(ctx, APP_STATE_SUCTION_LOCKOUT);
             }
+        }
+        break;
+    case APP_STATE_TRANSITION_CANDIDATE:
+        if (!sensors_ready(ctx) || !transition_candidate_detected(ctx)) {
+            ctx->faults = (fault_code_t)(ctx->faults | FAULT_SENSOR_STALE);
+        } else {
+            enter_state(ctx, APP_STATE_SUCTION_PRECHARGE);
         }
         break;
     case APP_STATE_SUCTION_PRECHARGE:
@@ -138,6 +160,17 @@ void app_state_machine_step(app_context_t *ctx, u16 dt_ms)
     case APP_STATE_WALL_TRACK:
         if (!sensors_ready(ctx)) {
             ctx->faults = (fault_code_t)(ctx->faults | FAULT_SENSOR_STALE);
+        } else if (cylinder_observed(ctx)) {
+            enter_state(ctx, APP_STATE_CYLINDER_TRACK);
+        } else if (transition_down_observed(ctx)) {
+            enter_state(ctx, APP_STATE_TRANSITION_DOWN);
+        }
+        break;
+    case APP_STATE_CYLINDER_TRACK:
+        if (!sensors_ready(ctx)) {
+            ctx->faults = (fault_code_t)(ctx->faults | FAULT_SENSOR_STALE);
+        } else if (wall_observed(ctx)) {
+            enter_state(ctx, APP_STATE_WALL_TRACK);
         } else if (transition_down_observed(ctx)) {
             enter_state(ctx, APP_STATE_TRANSITION_DOWN);
         }
@@ -150,8 +183,15 @@ void app_state_machine_step(app_context_t *ctx, u16 dt_ms)
         }
         break;
     case APP_STATE_GROUND_RECOVERY:
-        if (ctx->state_elapsed_ms >= GROUND_CONFIRM_TIME_MS && ground_observed(ctx)) {
+        if (!sensors_ready(ctx) || transition_up_observed(ctx) || cylinder_observed(ctx)) {
+            ctx->faults = (fault_code_t)(ctx->faults | FAULT_SENSOR_STALE);
+        } else if (ctx->state_elapsed_ms >= GROUND_CONFIRM_TIME_MS && ground_observed(ctx)) {
             enter_state(ctx, APP_STATE_FINISHED);
+        }
+        break;
+    case APP_STATE_SEESAW_PASS:
+        if (ground_observed(ctx)) {
+            enter_state(ctx, APP_STATE_GROUND_TRACK);
         }
         break;
     case APP_STATE_SUCTION_LOCKOUT:
@@ -161,6 +201,8 @@ void app_state_machine_step(app_context_t *ctx, u16 dt_ms)
     case APP_STATE_FINISHED:
         break;
     default:
+        ctx->faults = (fault_code_t)(ctx->faults | FAULT_HARD_POWER);
+        enter_state(ctx, APP_STATE_HARD_FAULT);
         break;
     }
 }

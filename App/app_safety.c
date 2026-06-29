@@ -13,9 +13,11 @@ safety_profile_t app_safety_select_profile(const app_context_t *ctx)
         return SAFETY_PROFILE_SUCTION_LOCKOUT;
     }
     if (ctx->app_state == APP_STATE_SUCTION_PRECHARGE ||
+        ctx->app_state == APP_STATE_TRANSITION_CANDIDATE ||
         ctx->app_state == APP_STATE_APPROACH_TRANSITION ||
         ctx->app_state == APP_STATE_TRANSITION_UP ||
         ctx->app_state == APP_STATE_WALL_TRACK ||
+        ctx->app_state == APP_STATE_CYLINDER_TRACK ||
         ctx->app_state == APP_STATE_TRANSITION_DOWN ||
         ctx->app_state == APP_STATE_WALL_FAILSAFE_HOLD ||
         ctx->surface_state == SURFACE_WALL) {
@@ -83,10 +85,14 @@ u8 app_safety_outputs_allowed(const app_context_t *ctx)
         return APP_FALSE;
     }
     if (ctx->app_state == APP_STATE_ARMED_GROUND ||
+        ctx->app_state == APP_STATE_GROUND_TRACK ||
+        ctx->app_state == APP_STATE_TRANSITION_CANDIDATE ||
         ctx->app_state == APP_STATE_SUCTION_PRECHARGE ||
         ctx->app_state == APP_STATE_APPROACH_TRANSITION ||
         ctx->app_state == APP_STATE_TRANSITION_UP ||
-        ctx->app_state == APP_STATE_WALL_TRACK) {
+        ctx->app_state == APP_STATE_WALL_TRACK ||
+        ctx->app_state == APP_STATE_CYLINDER_TRACK ||
+        ctx->app_state == APP_STATE_SEESAW_PASS) {
         return APP_TRUE;
     }
     return APP_FALSE;

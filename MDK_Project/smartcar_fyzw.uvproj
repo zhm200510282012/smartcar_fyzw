@@ -336,6 +336,11 @@
               <FilePath>..\App\app_scheduler.c</FilePath>
             </File>
             <File>
+              <FileName>app_output_arbitration.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\App\app_output_arbitration.c</FilePath>
+            </File>
+            <File>
               <FileName>app_state_machine.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\App\app_state_machine.c</FilePath>

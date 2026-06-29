@@ -5,13 +5,13 @@
 | 模块 | 信号名 | 实际引脚/资源 | 驱动文件 | 初始化函数 | 依据路径 | 证据等级 | 置信度 | 未验证风险 |
 |---|---|---|---|---|---|---|---:|---|
 | AI8051U | 系统时钟 | `MAIN_Fosc=40000000L` | `User/config.h` | `System_Init()` | 官方当前库 `4-LQ_AI8051U_LIB/User/config.h` | 官方源码 | 90% | 去年代码为 42 MHz，需确认使用哪套库下载 |
-| Keil 工程 | C251 v5.60 | AI8051U-32Bit Series | `MDK_Project/smartcar_fyzw.uvproj` | 官方 target 配置 | 官方 `LQ_AI8051U_32Bit_LIB.uvproj` | 官方工程 | 80% | 本机无 Keil，未实际构建 |
-| 调试串口 | UART1 | P30/P31, 115200 | `LQ_UART.c` | `UART_Init(UART1_P30_P31,115200ul)` | 综合测试 `User/main.c` | 官方例程 | 85% | 串口物理口需下载调试器确认 |
-| 有刷推进 | DRV8701 | PWM5/P50、PWM7/P52，方向 P51/P53 | `LQ_MotorServo.c` | `Motor_Init`, `Motor_Ctrl` | `LQ_MotorServo.c/.h` | 官方源码 | 80% | 电机极性和实车左右轮方向需空载确认，默认输出禁能 |
-| 转向/舵机 | Servo1/2 | PWM1/P10、PWM2/P12；50 Hz；中值 1510 us | `LQ_MotorServo.c` | `Servo_Init`, `Servo_Ctrl` | `LQ_MotorServo.c/.h` | 官方源码 | 80% | 舵机中值、方向、机械限位需标定，默认输出禁能 |
+| Keil 工程 | C251 v5.60 | AI8051U-32Bit Series | `MDK_Project/smartcar_fyzw.uvproj` | 官方 target 配置 | 官方 `LQ_AI8051U_32Bit_LIB.uvproj` | 官方工程 | 90% | 已在 `AI8051U_FYZW_SAFE` 真实 Rebuild 并生成 HEX |
+| 调试串口 | UART1 | P30/P31, 115200 | `BSP/bsp_debug_uart.c` | `UART_Configuration(UART1,...)` | 综合测试 `User/main.c` + official Driver | 官方例程 | 85% | 串口物理口需下载调试器确认 |
+| 有刷推进 | DRV8701 | PWM5/P50、PWM7/P52，方向 P51/P53 | `BSP/bsp_drive.c` | `PWM_Configuration`, `UpdatePwmCh`, `gpio_write_pin` | `LQ_MotorServo.c/.h` | 官方源码 | 80% | 电机极性和实车左右轮方向需离地确认 |
+| 转向/舵机 | Servo1/2 | PWM1/P10、PWM2/P12；50 Hz；中值 1510 us | `BSP/bsp_steering.c` | `PWM_Configuration`, `UpdatePwmCh` | `LQ_MotorServo.c/.h` | 官方源码 | 80% | 舵机中值、方向、机械限位需标定 |
 | 负压候选输出 | 单路 BLDC PWM | P23，PWMA PWM2N；50 Hz；1-2 ms 高电平 | `LQ_MotorServo.c` | `BLmotor_Init_1`, `BLmotor_Ctrl_w1` | 官方源码与 ESC 手册 | 候选闭环未完成 | 60% | 未证明当前负压 ESC 实接 P23，默认 `SUCTION_HW_VERIFIED=0` |
 | ESC 输入 | PWMIN | ESC 板 P00/P01 同一 PWMIN；GND 必须接；50-300 Hz；1-2 ms | ESC 手册/引脚说明 | 外部信号输入 | `LQ-STC_BLDC_MINI_V3...` | 官方资料 | 85% | MCU 到 ESC 接线、供电、方向、故障输出未闭环 |
-| 编码器 | Enc1/Enc2 | Enc1: T3 A=P04 DIR=P05；Enc2: T4 A=P06 DIR=P07；原理图信号 `ENC1A/B`,`ENC2A/B` | `LQ_Encoder.c` | `Timer_EncInit`, `Read_Encoder` | 官方源码和 AI8051U 原理图 | 官方源码+原理图 | 80% | 轮径、线数、方向需实测 |
+| 编码器 | Enc1/Enc2 | Enc1: T3 A=P04 DIR=P05；Enc2: T4 A=P06 DIR=P07；原理图信号 `ENC1A/B`,`ENC2A/B` | `BSP/bsp_encoder.c` | T3/T4 外部计数，读后清零 | 官方源码和 AI8051U 原理图 | 官方源码+原理图 | 80% | 轮径、线数、方向需实测 |
 | 5LC 电磁 | 5 路 ADC 算法资产 | 去年顺序 ADC5,4,3,0,1 -> L1,L2,M,R1,R2；官方 ADC 初始化含 CH0-5, CH9 | `LQ_ADC.c`, legacy `Inductor.c` | `ADC_Init`, `Get_ADCResult` | 官方 ADC 源码 + 去年代码 | 部分证据 | 60% | 5LC 到 AI8051U 实际通道未从原理图完全闭环 |
 | LSM6DSR | IMU SPI/I2C | 原理图文本显示 SPIMISO/SPIMOSI/SPICLK/SPICS 与 SDO/SA0/SDA/SCL/CS；数据手册支持 I2C/SPI | `LQ_LSM6DSR_Hard.c/.h` | `Test_LSM6DSR_Hard`, `LSM6DSR_Init` | 官方源码、原理图、数据手册 | 中等 | 75% | 安装方向和坐标轴必须实测 |
 | UI | OLED/KEY/LED | 官方测试提供 GPIO_LED、KEY、OLED；具体按官方库 | `LQ_GPIO_LED.c`, `LQ_KEY.c`, `LQ_OLED096.c` | 官方测试函数 | 综合测试工程 | 官方例程 | 75% | 人工授权键位需实车确认 |

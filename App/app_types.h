@@ -1,12 +1,14 @@
 #ifndef APP_TYPES_H
 #define APP_TYPES_H
 
+#ifndef __DEF_H__
 typedef unsigned char u8;
 typedef signed char s8;
 typedef unsigned int u16;
 typedef signed int s16;
 typedef unsigned long u32;
 typedef signed long s32;
+#endif
 
 #define APP_TRUE 1u
 #define APP_FALSE 0u
@@ -23,19 +25,23 @@ typedef enum {
 
 typedef enum {
     APP_STATE_BOOT = 0,
-    APP_STATE_SELF_TEST,
+    APP_STATE_SELF_CHECK,
     APP_STATE_SENSOR_CALIBRATION,
     APP_STATE_SAFE_GROUND_READY,
     APP_STATE_ARMED_GROUND,
+    APP_STATE_GROUND_TRACK,
+    APP_STATE_TRANSITION_CANDIDATE,
     APP_STATE_SUCTION_PRECHARGE,
     APP_STATE_APPROACH_TRANSITION,
     APP_STATE_TRANSITION_UP,
     APP_STATE_WALL_TRACK,
+    APP_STATE_CYLINDER_TRACK,
     APP_STATE_TRANSITION_DOWN,
     APP_STATE_GROUND_RECOVERY,
+    APP_STATE_SEESAW_PASS,
     APP_STATE_FINISHED,
-    APP_STATE_SUCTION_LOCKOUT,
     APP_STATE_GROUND_FAULT,
+    APP_STATE_SUCTION_LOCKOUT,
     APP_STATE_WALL_FAILSAFE_HOLD,
     APP_STATE_HARD_FAULT
 } app_state_t;
@@ -59,7 +65,9 @@ typedef enum {
     FAULT_POWER_RISK = 16u,
     FAULT_SUCTION_UNVERIFIED = 32u,
     FAULT_HARD_POWER = 64u,
-    FAULT_SUCTION_LOCKOUT = 128u
+    FAULT_SUCTION_LOCKOUT = 128u,
+    FAULT_IMU_INVALID = 256u,
+    FAULT_KILL_SWITCH = 512u
 } fault_code_t;
 
 typedef struct {
@@ -115,12 +123,17 @@ typedef struct {
     u8 manual_arm;
     u8 manual_suction_authorize;
     u8 transition_candidate;
+    u8 kill_switch;
     u8 test_mode;
     u16 adhesion_risk;
     s16 speed_limit_mm_s;
     s16 drive_command_native;
+    s16 left_drive_command_native;
+    s16 right_drive_command_native;
     s16 steering_offset_us;
     u16 steering_pulse_us;
+    u16 steering_left_pulse_us;
+    u16 steering_right_pulse_us;
     suction_command_t suction_cmd;
     emag_sample_t emag;
     attitude_sample_t attitude;

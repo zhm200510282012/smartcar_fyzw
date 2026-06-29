@@ -1,10 +1,9 @@
-import glob
 import argparse
 import os
+import shlex
 import shutil
 import subprocess
 import sys
-import sysconfig
 from pathlib import Path
 
 
@@ -16,6 +15,7 @@ SOURCES = [
     "sim/host/sil_runner.c",
     "sim/host/host_bsp.c",
     "App/app_scheduler.c",
+    "App/app_output_arbitration.c",
     "App/app_state_machine.c",
     "App/app_safety.c",
     "App/app_telemetry.c",
@@ -35,27 +35,24 @@ SOURCES = [
     "Track/track_surface_state.c",
 ]
 
+KNOWN_COMPILER_PATHS = [
+    r"D:\Qt\Tools\mingw810_64\bin\gcc.exe",
+    r"D:\Qt\Tools\mingw810_32\bin\gcc.exe",
+    r"D:\VIVADO19\Vivado\2019.1\msys64\mingw64\bin\gcc.exe",
+    r"D:\application file\Dev-Cpp\MinGW64\bin\gcc.exe",
+    r"D:\VIVADO19\Vivado\2019.1\msys64\mingw64\bin\clang.exe",
+    r"D:\Matlab\matlab\toolbox\sldrt\clang\win64\clang.exe",
+]
+
 
 def _existing_command(candidate):
     if not candidate:
         return None
-    parts = candidate.split()
+    parts = shlex.split(candidate, posix=False)
     exe = shutil.which(parts[0]) or (parts[0] if Path(parts[0]).exists() else None)
     if exe:
         return [exe] + parts[1:]
     return None
-
-
-def _python_zig_candidates():
-    candidates = []
-    scripts_dir = sysconfig.get_path("scripts")
-    if scripts_dir:
-        candidates.append(Path(scripts_dir) / "python-zig.exe")
-        candidates.append(Path(scripts_dir) / "python-zig")
-    appdata = os.environ.get("APPDATA")
-    if appdata:
-        candidates.extend(Path(p) for p in glob.glob(str(Path(appdata) / "Python" / "Python*" / "Scripts" / "python-zig.exe")))
-    return candidates
 
 
 def find_compiler():
@@ -63,20 +60,24 @@ def find_compiler():
     if env_cc:
         return env_cc
 
-    for name in ("gcc", "clang", "cc"):
+    for name in ("cl", "gcc", "clang", "cc"):
         path = shutil.which(name)
         if path:
             return [path]
 
-    zig = shutil.which("zig")
-    if zig:
-        return [zig, "cc"]
-
-    for candidate in _python_zig_candidates():
-        if candidate.exists():
-            return [str(candidate), "cc"]
+    for candidate in KNOWN_COMPILER_PATHS:
+        path = Path(candidate)
+        if path.exists():
+            return [str(path)]
 
     return None
+
+
+def compiler_kind(compiler):
+    exe_name = Path(compiler[0]).name.lower()
+    if exe_name == "cl.exe" or exe_name == "cl":
+        return "msvc"
+    return "gcc"
 
 
 def profile_flags(profile):
@@ -102,29 +103,53 @@ def build(profile="guard"):
     build_log = profile_log_path(profile)
     exe_path = profile_exe_path(profile)
     if compiler is None:
-        build_log.write_text("No host C compiler found. Tried HOST_SIL_CC, gcc, clang, cc, zig cc, python-zig.exe cc.\n", encoding="utf-8")
+        build_log.write_text(
+            "No host C compiler found. Tried HOST_SIL_CC, cl, gcc, clang, cc, and known existing local compiler paths.\n",
+            encoding="utf-8",
+        )
         return 2
 
-    cmd = (
-        compiler
-        + [
-            "-std=c99",
-            "-Wall",
-            "-Wextra",
-            "-Werror",
-            "-DHOST_SIL=1",
-            *profile_flags(profile),
-            "-I.",
-            "-IApp",
-            "-IBSP",
-            "-IControl",
-            "-ITrack",
-            "-Isim/host",
-            "-o",
-            str(exe_path),
-        ]
-        + [str(REPO_ROOT / source) for source in SOURCES]
-    )
+    source_paths = [str(REPO_ROOT / source) for source in SOURCES]
+    if compiler_kind(compiler) == "msvc":
+        cmd = (
+            compiler
+            + [
+                "/nologo",
+                "/W4",
+                "/WX",
+                "/DHOST_SIL=1",
+                *(flag.replace("-D", "/D") for flag in profile_flags(profile)),
+                "/I.",
+                "/IApp",
+                "/IBSP",
+                "/IControl",
+                "/ITrack",
+                "/Isim/host",
+            ]
+            + source_paths
+            + ["/Fe:" + str(exe_path)]
+        )
+    else:
+        cmd = (
+            compiler
+            + [
+                "-std=c99",
+                "-Wall",
+                "-Wextra",
+                "-Werror",
+                "-DHOST_SIL=1",
+                *profile_flags(profile),
+                "-I.",
+                "-IApp",
+                "-IBSP",
+                "-IControl",
+                "-ITrack",
+                "-Isim/host",
+                "-o",
+                str(exe_path),
+            ]
+            + source_paths
+        )
 
     result = subprocess.run(
         cmd,

@@ -13,7 +13,11 @@
 static u32 g_now_ms;
 static host_sil_input_t g_input;
 static s16 g_drive_command_native;
+static s16 g_drive_left_native;
+static s16 g_drive_right_native;
 static u16 g_steering_pulse_us;
+static u16 g_steering_left_pulse_us;
+static u16 g_steering_right_pulse_us;
 static suction_command_t g_suction_command;
 static u16 g_suction_native_output;
 static app_state_t g_last_ui_state;
@@ -29,6 +33,7 @@ void host_bsp_reset(void)
     g_input.line_error = 0;
     g_input.signal_quality = LINE_QUALITY_MIN;
     g_input.imu_fresh = APP_TRUE;
+    g_input.imu_id_ok = APP_TRUE;
     g_input.pitch_cdeg = 0;
     g_input.encoder_valid = APP_TRUE;
     g_input.left_count = 0l;
@@ -36,8 +41,15 @@ void host_bsp_reset(void)
     g_input.left_speed_mm_s = 0;
     g_input.right_speed_mm_s = 0;
     g_input.power_ok = APP_TRUE;
+    g_input.kill_switch = APP_FALSE;
+    g_input.control_period_ok = APP_TRUE;
+    g_input.force_app_state = -1;
     g_drive_command_native = DRIVE_SAFE_ZERO;
+    g_drive_left_native = DRIVE_SAFE_ZERO;
+    g_drive_right_native = DRIVE_SAFE_ZERO;
     g_steering_pulse_us = STEERING_SAFE_CENTER_US;
+    g_steering_left_pulse_us = STEERING_SAFE_CENTER_US;
+    g_steering_right_pulse_us = STEERING_SAFE_CENTER_US;
     g_suction_command.mode = SUCTION_OFF;
     g_suction_command.command_native = SUCTION_SAFE_OFF_NATIVE;
     g_suction_command.armed = APP_FALSE;
@@ -60,6 +72,21 @@ u8 host_bsp_transition_candidate(void)
     return g_input.transition_candidate;
 }
 
+u8 host_bsp_kill_switch(void)
+{
+    return g_input.kill_switch;
+}
+
+u8 host_bsp_control_period_ok(void)
+{
+    return g_input.control_period_ok;
+}
+
+s16 host_bsp_force_app_state(void)
+{
+    return g_input.force_app_state;
+}
+
 void bsp_timebase_init(void)
 {
     g_now_ms = 0ul;
@@ -78,13 +105,24 @@ void bsp_timebase_on_tick_1ms(void)
 void bsp_drive_init(void)
 {
     g_drive_command_native = DRIVE_SAFE_ZERO;
+    g_drive_left_native = DRIVE_SAFE_ZERO;
+    g_drive_right_native = DRIVE_SAFE_ZERO;
 }
 
 void bsp_drive_apply(s16 drive_command_native)
 {
-    if (drive_command_native > DRIVE_LIMIT_ABS) drive_command_native = DRIVE_LIMIT_ABS;
-    if (drive_command_native < -DRIVE_LIMIT_ABS) drive_command_native = -DRIVE_LIMIT_ABS;
-    g_drive_command_native = drive_command_native;
+    bsp_drive_apply_lr(drive_command_native, drive_command_native);
+}
+
+void bsp_drive_apply_lr(s16 left_native, s16 right_native)
+{
+    if (left_native > DRIVE_LIMIT_ABS) left_native = DRIVE_LIMIT_ABS;
+    if (left_native < -DRIVE_LIMIT_ABS) left_native = -DRIVE_LIMIT_ABS;
+    if (right_native > DRIVE_LIMIT_ABS) right_native = DRIVE_LIMIT_ABS;
+    if (right_native < -DRIVE_LIMIT_ABS) right_native = -DRIVE_LIMIT_ABS;
+    g_drive_left_native = left_native;
+    g_drive_right_native = right_native;
+    g_drive_command_native = (s16)((left_native + right_native) / 2);
 }
 
 s16 bsp_drive_last_command_native(void)
@@ -92,21 +130,52 @@ s16 bsp_drive_last_command_native(void)
     return g_drive_command_native;
 }
 
+s16 bsp_drive_last_left_native(void)
+{
+    return g_drive_left_native;
+}
+
+s16 bsp_drive_last_right_native(void)
+{
+    return g_drive_right_native;
+}
+
 void bsp_steering_init(void)
 {
     g_steering_pulse_us = STEERING_SAFE_CENTER_US;
+    g_steering_left_pulse_us = STEERING_SAFE_CENTER_US;
+    g_steering_right_pulse_us = STEERING_SAFE_CENTER_US;
 }
 
 void bsp_steering_apply(u16 steering_pulse_us)
 {
-    if (steering_pulse_us < STEERING_MIN_PULSE_US) steering_pulse_us = STEERING_MIN_PULSE_US;
-    if (steering_pulse_us > STEERING_MAX_PULSE_US) steering_pulse_us = STEERING_MAX_PULSE_US;
-    g_steering_pulse_us = steering_pulse_us;
+    bsp_steering_apply_pair(steering_pulse_us, steering_pulse_us);
+}
+
+void bsp_steering_apply_pair(u16 left_pulse_us, u16 right_pulse_us)
+{
+    if (left_pulse_us < STEERING_MIN_PULSE_US) left_pulse_us = STEERING_MIN_PULSE_US;
+    if (left_pulse_us > STEERING_MAX_PULSE_US) left_pulse_us = STEERING_MAX_PULSE_US;
+    if (right_pulse_us < STEERING_MIN_PULSE_US) right_pulse_us = STEERING_MIN_PULSE_US;
+    if (right_pulse_us > STEERING_MAX_PULSE_US) right_pulse_us = STEERING_MAX_PULSE_US;
+    g_steering_left_pulse_us = left_pulse_us;
+    g_steering_right_pulse_us = right_pulse_us;
+    g_steering_pulse_us = (u16)((left_pulse_us + right_pulse_us) / 2u);
 }
 
 u16 bsp_steering_last_pulse_us(void)
 {
     return g_steering_pulse_us;
+}
+
+u16 bsp_steering_last_left_pulse_us(void)
+{
+    return g_steering_left_pulse_us;
+}
+
+u16 bsp_steering_last_right_pulse_us(void)
+{
+    return g_steering_right_pulse_us;
 }
 
 void bsp_suction_init(void)
@@ -135,6 +204,17 @@ void bsp_suction_apply(const suction_command_t *cmd)
     g_suction_command.hw_verified = APP_TRUE;
     g_suction_native_output = g_suction_command.command_native;
 #endif
+}
+
+void bsp_suction_force_off(void)
+{
+    g_suction_command.mode = SUCTION_OFF;
+    g_suction_command.command_native = SUCTION_SAFE_OFF_NATIVE;
+    g_suction_command.armed = APP_FALSE;
+    g_suction_command.hw_verified = APP_FALSE;
+    g_suction_command.feedback_valid = APP_FALSE;
+    g_suction_command.fault_code = (u8)(g_suction_command.fault_code | FAULT_SUCTION_UNVERIFIED);
+    g_suction_native_output = SUCTION_SAFE_OFF_NATIVE;
 }
 
 suction_command_t bsp_suction_last_command(void)
@@ -189,7 +269,7 @@ attitude_sample_t bsp_imu_read(void)
     sample.pitch_cdeg = g_input.pitch_cdeg;
     sample.yaw_rate_cdeg_s = 0;
     sample.timestamp_ms = g_input.time_ms;
-    sample.id_ok = APP_TRUE;
+    sample.id_ok = g_input.imu_id_ok;
     sample.fresh = g_input.imu_fresh;
     return sample;
 }

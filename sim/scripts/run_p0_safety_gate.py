@@ -26,6 +26,10 @@ INPUT_HEADER = [
     "left_speed_mm_s",
     "right_speed_mm_s",
     "power_ok",
+    "imu_id_ok",
+    "kill_switch",
+    "control_period_ok",
+    "force_app_state",
 ]
 
 APP_STATES = {
@@ -34,17 +38,21 @@ APP_STATES = {
     2: "SENSOR_CALIBRATION",
     3: "SAFE_GROUND_READY",
     4: "ARMED_GROUND",
-    5: "PRECHARGE",
-    6: "APPROACH_TRANSITION",
-    7: "TRANSITION_UP",
-    8: "WALL_TRACK",
-    9: "TRANSITION_DOWN",
-    10: "GROUND_RECOVERY",
-    11: "FINISHED",
-    12: "SUCTION_LOCKOUT",
-    13: "GROUND_FAULT",
-    14: "WALL_FAILSAFE_HOLD",
-    15: "HARD_FAULT",
+    5: "GROUND_TRACK",
+    6: "TRANSITION_CANDIDATE",
+    7: "SUCTION_PRECHARGE",
+    8: "APPROACH_TRANSITION",
+    9: "TRANSITION_UP",
+    10: "WALL_TRACK",
+    11: "CYLINDER_TRACK",
+    12: "TRANSITION_DOWN",
+    13: "GROUND_RECOVERY",
+    14: "SEESAW_PASS",
+    15: "FINISHED",
+    16: "GROUND_FAULT",
+    17: "SUCTION_LOCKOUT",
+    18: "WALL_FAILSAFE_HOLD",
+    19: "HARD_FAULT",
 }
 
 SURFACES = {
@@ -58,10 +66,12 @@ SURFACES = {
 }
 
 WALL_STATES = {
-    "PRECHARGE",
+    "TRANSITION_CANDIDATE",
+    "SUCTION_PRECHARGE",
     "APPROACH_TRANSITION",
     "TRANSITION_UP",
     "WALL_TRACK",
+    "CYLINDER_TRACK",
     "TRANSITION_DOWN",
     "WALL_FAILSAFE_HOLD",
 }
@@ -163,6 +173,10 @@ def generate_input_rows(kind):
         line_error = line_error_for(kind, t)
         pitch_cdeg = wall_pitch(kind, t)
         power_ok = 1
+        imu_id_ok = 1
+        kill_switch = 0
+        control_period_ok = 1
+        force_app_state = -1
 
         if kind == "ground_imu_stale" and t >= 520:
             imu_fresh = 0
@@ -173,6 +187,8 @@ def generate_input_rows(kind):
         if kind == "wall_emag_loss" and t >= 1400:
             emag_valid = 0
             signal_quality = 0
+        if kind == "imu_pitch_abnormal" and t >= 1400:
+            imu_id_ok = 0
 
         rows.append(
             {
@@ -191,6 +207,10 @@ def generate_input_rows(kind):
                 "left_speed_mm_s": 100,
                 "right_speed_mm_s": 100,
                 "power_ok": power_ok,
+                "imu_id_ok": imu_id_ok,
+                "kill_switch": kill_switch,
+                "control_period_ok": control_period_ok,
+                "force_app_state": force_app_state,
             }
         )
     return rows
@@ -300,10 +320,10 @@ def assert_expectation(scenario, rows, sequence):
             failures.append("logical wall profile did not produce logical suction request")
 
     if name in P0_PRECHARGE_SCENARIOS:
-        precharge_time = first_time(rows, lambda row: state_name(row["app_state"]) == "PRECHARGE")
+        precharge_time = first_time(rows, lambda row: state_name(row["app_state"]) == "SUCTION_PRECHARGE")
         observed_time = first_time(rows, lambda row: int(row["transition_up_observed"]) != 0)
         if precharge_time is None:
-            failures.append("PRECHARGE not reached")
+            failures.append("SUCTION_PRECHARGE not reached")
         if observed_time is None:
             failures.append("transition_up_observed never became true")
         if precharge_time is not None and observed_time is not None and precharge_time >= observed_time:
@@ -319,7 +339,7 @@ def assert_expectation(scenario, rows, sequence):
         if seq & FAULT_STATES:
             failures.append("ground scenario entered fault state")
     elif expect == "wall_track":
-        for required in ("PRECHARGE", "APPROACH_TRANSITION", "TRANSITION_UP", "WALL_TRACK"):
+        for required in ("SUCTION_PRECHARGE", "APPROACH_TRANSITION", "TRANSITION_UP", "WALL_TRACK"):
             if required not in seq:
                 failures.append(f"{required} not reached")
         if seq & FAULT_STATES:

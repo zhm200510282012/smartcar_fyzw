@@ -1,19 +1,19 @@
 {
-  "scenario_count": 13,
-  "passed": 13,
+  "scenario_count": 20,
+  "passed": 20,
   "failed": 0,
   "deterministic_tick_ms": 1,
   "profiles": {
     "guard": {
-      "scenario_count": 4,
-      "passed": 4,
+      "scenario_count": 8,
+      "passed": 8,
       "failed": 0,
       "max_logical_suction_request": 0,
       "max_hardware_suction_output": 0
     },
     "logical_wall": {
-      "scenario_count": 9,
-      "passed": 9,
+      "scenario_count": 12,
+      "passed": 12,
       "failed": 0,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0
@@ -25,7 +25,6 @@
       "profile": "guard",
       "pass": true,
       "notes": "ok; surfaces=GROUND/UNKNOWN",
-      "output_csv": "sim\\results\\guard_S01_ground_straight.csv",
       "state_sequence": [
         "BOOT",
         "SELF_CHECK",
@@ -34,6 +33,7 @@
         "ARMED_GROUND",
         "GROUND_TRACK"
       ],
+      "output_csv": "sim\\results\\full_guard_S01_ground_straight.csv",
       "max_speed_cmd": 500,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 0,
@@ -45,7 +45,6 @@
       "profile": "guard",
       "pass": true,
       "notes": "ok; surfaces=GROUND/UNKNOWN",
-      "output_csv": "sim\\results\\guard_S02_ground_curve_left_right.csv",
       "state_sequence": [
         "BOOT",
         "SELF_CHECK",
@@ -54,18 +53,18 @@
         "ARMED_GROUND",
         "GROUND_TRACK"
       ],
+      "output_csv": "sim\\results\\full_guard_S02_ground_curve_left_right.csv",
       "max_speed_cmd": 500,
       "max_steering_cmd": 45,
       "max_logical_suction_request": 0,
       "max_hardware_suction_output": 0,
       "fault_state": ""
     },
-    "S03_ground_to_wall_transition_radius": {
-      "name": "S03_ground_to_wall_transition_radius",
+    "S03_precharge_before_transition": {
+      "name": "S03_precharge_before_transition",
       "profile": "logical_wall",
       "pass": true,
       "notes": "ok; surfaces=GROUND/TRANSITION_UP/UNKNOWN/WALL",
-      "output_csv": "sim\\results\\logical_wall_S03_ground_to_wall_transition_radius.csv",
       "state_sequence": [
         "BOOT",
         "SELF_CHECK",
@@ -79,18 +78,18 @@
         "TRANSITION_UP",
         "WALL_TRACK"
       ],
+      "output_csv": "sim\\results\\full_logical_wall_S03_precharge_before_transition.csv",
       "max_speed_cmd": 500,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
       "fault_state": ""
     },
-    "S04_vertical_wall_track": {
-      "name": "S04_vertical_wall_track",
+    "S04_wall_track": {
+      "name": "S04_wall_track",
       "profile": "logical_wall",
       "pass": true,
       "notes": "ok; surfaces=GROUND/TRANSITION_UP/UNKNOWN/WALL",
-      "output_csv": "sim\\results\\logical_wall_S04_vertical_wall_track.csv",
       "state_sequence": [
         "BOOT",
         "SELF_CHECK",
@@ -104,6 +103,7 @@
         "TRANSITION_UP",
         "WALL_TRACK"
       ],
+      "output_csv": "sim\\results\\full_logical_wall_S04_wall_track.csv",
       "max_speed_cmd": 500,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
@@ -115,7 +115,6 @@
       "profile": "logical_wall",
       "pass": true,
       "notes": "ok; surfaces=GROUND/TRANSITION_DOWN/TRANSITION_UP/UNKNOWN/WALL",
-      "output_csv": "sim\\results\\logical_wall_S05_wall_to_ground_transition.csv",
       "state_sequence": [
         "BOOT",
         "SELF_CHECK",
@@ -132,18 +131,18 @@
         "GROUND_RECOVERY",
         "FINISHED"
       ],
+      "output_csv": "sim\\results\\full_logical_wall_S05_wall_to_ground_transition.csv",
       "max_speed_cmd": 500,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
       "fault_state": ""
     },
-    "S06_cylindrical_or_curved_surface": {
-      "name": "S06_cylindrical_or_curved_surface",
+    "S06_curved_or_cylinder_mode": {
+      "name": "S06_curved_or_cylinder_mode",
       "profile": "logical_wall",
       "pass": true,
-      "notes": "ok; surfaces=GROUND/TRANSITION_UP/UNKNOWN/WALL",
-      "output_csv": "sim\\results\\logical_wall_S06_cylindrical_or_curved_surface.csv",
+      "notes": "ok; surfaces=CYLINDER/GROUND/TRANSITION_UP/UNKNOWN/WALL",
       "state_sequence": [
         "BOOT",
         "SELF_CHECK",
@@ -155,20 +154,22 @@
         "SUCTION_PRECHARGE",
         "APPROACH_TRANSITION",
         "TRANSITION_UP",
+        "WALL_TRACK",
+        "CYLINDER_TRACK",
         "WALL_TRACK"
       ],
+      "output_csv": "sim\\results\\full_logical_wall_S06_curved_or_cylinder_mode.csv",
       "max_speed_cmd": 500,
       "max_steering_cmd": 30,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
       "fault_state": ""
     },
-    "S07_sensor_stale_on_ground": {
-      "name": "S07_sensor_stale_on_ground",
+    "S07_stale_sensor_on_ground": {
+      "name": "S07_stale_sensor_on_ground",
       "profile": "guard",
       "pass": true,
       "notes": "ok; surfaces=GROUND/UNKNOWN",
-      "output_csv": "sim\\results\\guard_S07_sensor_stale_on_ground.csv",
       "state_sequence": [
         "BOOT",
         "SELF_CHECK",
@@ -178,18 +179,18 @@
         "GROUND_TRACK",
         "GROUND_FAULT"
       ],
+      "output_csv": "sim\\results\\full_guard_S07_stale_sensor_on_ground.csv",
       "max_speed_cmd": 500,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 0,
       "max_hardware_suction_output": 0,
       "fault_state": "GROUND_FAULT"
     },
-    "S08_sensor_stale_on_wall": {
-      "name": "S08_sensor_stale_on_wall",
+    "S08_stale_sensor_on_wall": {
+      "name": "S08_stale_sensor_on_wall",
       "profile": "logical_wall",
       "pass": true,
       "notes": "ok; surfaces=GROUND/TRANSITION_UP/UNKNOWN/WALL",
-      "output_csv": "sim\\results\\logical_wall_S08_sensor_stale_on_wall.csv",
       "state_sequence": [
         "BOOT",
         "SELF_CHECK",
@@ -204,6 +205,7 @@
         "WALL_TRACK",
         "WALL_FAILSAFE_HOLD"
       ],
+      "output_csv": "sim\\results\\full_logical_wall_S08_stale_sensor_on_wall.csv",
       "max_speed_cmd": 500,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
@@ -215,7 +217,6 @@
       "profile": "logical_wall",
       "pass": true,
       "notes": "ok; surfaces=GROUND/TRANSITION_UP/UNKNOWN",
-      "output_csv": "sim\\results\\logical_wall_S09_transition_timeout.csv",
       "state_sequence": [
         "BOOT",
         "SELF_CHECK",
@@ -229,18 +230,18 @@
         "TRANSITION_UP",
         "WALL_FAILSAFE_HOLD"
       ],
+      "output_csv": "sim\\results\\full_logical_wall_S09_transition_timeout.csv",
       "max_speed_cmd": 500,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1100,
       "max_hardware_suction_output": 0,
       "fault_state": "WALL_FAILSAFE_HOLD"
     },
-    "S10_suction_unverified": {
-      "name": "S10_suction_unverified",
+    "S10_suction_unverified_lockout": {
+      "name": "S10_suction_unverified_lockout",
       "profile": "guard",
       "pass": true,
-      "notes": "ok; surfaces=GROUND/UNKNOWN",
-      "output_csv": "sim\\results\\guard_S10_suction_unverified.csv",
+      "notes": "ok; surfaces=GROUND/TRANSITION_UP/UNKNOWN/WALL",
       "state_sequence": [
         "BOOT",
         "SELF_CHECK",
@@ -250,6 +251,7 @@
         "GROUND_TRACK",
         "SUCTION_LOCKOUT"
       ],
+      "output_csv": "sim\\results\\full_guard_S10_suction_unverified_lockout.csv",
       "max_speed_cmd": 500,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 0,
@@ -261,7 +263,6 @@
       "profile": "logical_wall",
       "pass": true,
       "notes": "ok; surfaces=GROUND/TRANSITION_UP/UNKNOWN/WALL",
-      "output_csv": "sim\\results\\logical_wall_S11_encoder_dropout.csv",
       "state_sequence": [
         "BOOT",
         "SELF_CHECK",
@@ -276,6 +277,7 @@
         "WALL_TRACK",
         "WALL_FAILSAFE_HOLD"
       ],
+      "output_csv": "sim\\results\\full_logical_wall_S11_encoder_dropout.csv",
       "max_speed_cmd": 500,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
@@ -287,7 +289,6 @@
       "profile": "logical_wall",
       "pass": true,
       "notes": "ok; surfaces=GROUND/TRANSITION_UP/UNKNOWN/WALL",
-      "output_csv": "sim\\results\\logical_wall_S12_emag_loss.csv",
       "state_sequence": [
         "BOOT",
         "SELF_CHECK",
@@ -302,18 +303,18 @@
         "WALL_TRACK",
         "WALL_FAILSAFE_HOLD"
       ],
+      "output_csv": "sim\\results\\full_logical_wall_S12_emag_loss.csv",
       "max_speed_cmd": 500,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
       "fault_state": "WALL_FAILSAFE_HOLD"
     },
-    "S13_imu_axis_or_pitch_abnormal": {
-      "name": "S13_imu_axis_or_pitch_abnormal",
+    "S13_imu_abnormal": {
+      "name": "S13_imu_abnormal",
       "profile": "logical_wall",
       "pass": true,
-      "notes": "ok; surfaces=CYLINDER/GROUND/TRANSITION_UP/UNKNOWN/WALL",
-      "output_csv": "sim\\results\\logical_wall_S13_imu_axis_or_pitch_abnormal.csv",
+      "notes": "ok; surfaces=GROUND/TRANSITION_UP/UNKNOWN/WALL",
       "state_sequence": [
         "BOOT",
         "SELF_CHECK",
@@ -328,11 +329,174 @@
         "WALL_TRACK",
         "WALL_FAILSAFE_HOLD"
       ],
+      "output_csv": "sim\\results\\full_logical_wall_S13_imu_abnormal.csv",
       "max_speed_cmd": 500,
       "max_steering_cmd": 0,
       "max_logical_suction_request": 1200,
       "max_hardware_suction_output": 0,
       "fault_state": "WALL_FAILSAFE_HOLD"
+    },
+    "S14_unarmed_steering_centered": {
+      "name": "S14_unarmed_steering_centered",
+      "profile": "guard",
+      "pass": true,
+      "notes": "ok; surfaces=GROUND/UNKNOWN",
+      "state_sequence": [
+        "BOOT",
+        "SELF_CHECK",
+        "SENSOR_CALIBRATION",
+        "SAFE_GROUND_READY"
+      ],
+      "output_csv": "sim\\results\\full_guard_S14_unarmed_steering_centered.csv",
+      "max_speed_cmd": 0,
+      "max_steering_cmd": 0,
+      "max_logical_suction_request": 0,
+      "max_hardware_suction_output": 0,
+      "fault_state": ""
+    },
+    "S15_finished_steering_centered": {
+      "name": "S15_finished_steering_centered",
+      "profile": "logical_wall",
+      "pass": true,
+      "notes": "ok; surfaces=GROUND/TRANSITION_DOWN/TRANSITION_UP/UNKNOWN/WALL",
+      "state_sequence": [
+        "BOOT",
+        "SELF_CHECK",
+        "SENSOR_CALIBRATION",
+        "SAFE_GROUND_READY",
+        "ARMED_GROUND",
+        "GROUND_TRACK",
+        "TRANSITION_CANDIDATE",
+        "SUCTION_PRECHARGE",
+        "APPROACH_TRANSITION",
+        "TRANSITION_UP",
+        "WALL_TRACK",
+        "TRANSITION_DOWN",
+        "GROUND_RECOVERY",
+        "FINISHED"
+      ],
+      "output_csv": "sim\\results\\full_logical_wall_S15_finished_steering_centered.csv",
+      "max_speed_cmd": 500,
+      "max_steering_cmd": 0,
+      "max_logical_suction_request": 1200,
+      "max_hardware_suction_output": 0,
+      "fault_state": ""
+    },
+    "S16_illegal_state_hard_fault": {
+      "name": "S16_illegal_state_hard_fault",
+      "profile": "guard",
+      "pass": true,
+      "notes": "ok; surfaces=GROUND/UNKNOWN",
+      "state_sequence": [
+        "BOOT",
+        "SELF_CHECK",
+        "SENSOR_CALIBRATION",
+        "SAFE_GROUND_READY",
+        "ARMED_GROUND",
+        "GROUND_TRACK",
+        "HARD_FAULT"
+      ],
+      "output_csv": "sim\\results\\full_guard_S16_illegal_state_hard_fault.csv",
+      "max_speed_cmd": 500,
+      "max_steering_cmd": 0,
+      "max_logical_suction_request": 0,
+      "max_hardware_suction_output": 0,
+      "fault_state": "HARD_FAULT"
+    },
+    "S17_transition_down_no_rebound_up": {
+      "name": "S17_transition_down_no_rebound_up",
+      "profile": "logical_wall",
+      "pass": true,
+      "notes": "ok; surfaces=GROUND/TRANSITION_DOWN/TRANSITION_UP/UNKNOWN/WALL",
+      "state_sequence": [
+        "BOOT",
+        "SELF_CHECK",
+        "SENSOR_CALIBRATION",
+        "SAFE_GROUND_READY",
+        "ARMED_GROUND",
+        "GROUND_TRACK",
+        "TRANSITION_CANDIDATE",
+        "SUCTION_PRECHARGE",
+        "APPROACH_TRANSITION",
+        "TRANSITION_UP",
+        "WALL_TRACK",
+        "TRANSITION_DOWN",
+        "GROUND_RECOVERY",
+        "WALL_FAILSAFE_HOLD"
+      ],
+      "output_csv": "sim\\results\\full_logical_wall_S17_transition_down_no_rebound_up.csv",
+      "max_speed_cmd": 500,
+      "max_steering_cmd": 0,
+      "max_logical_suction_request": 1200,
+      "max_hardware_suction_output": 0,
+      "fault_state": "WALL_FAILSAFE_HOLD"
+    },
+    "S18_single_frame_imu_spike_rejection": {
+      "name": "S18_single_frame_imu_spike_rejection",
+      "profile": "guard",
+      "pass": true,
+      "notes": "ok; surfaces=CYLINDER/GROUND/UNKNOWN",
+      "state_sequence": [
+        "BOOT",
+        "SELF_CHECK",
+        "SENSOR_CALIBRATION",
+        "SAFE_GROUND_READY",
+        "ARMED_GROUND",
+        "GROUND_TRACK"
+      ],
+      "output_csv": "sim\\results\\full_guard_S18_single_frame_imu_spike_rejection.csv",
+      "max_speed_cmd": 500,
+      "max_steering_cmd": 0,
+      "max_logical_suction_request": 0,
+      "max_hardware_suction_output": 0,
+      "fault_state": ""
+    },
+    "S19_kill_overrides_all_outputs": {
+      "name": "S19_kill_overrides_all_outputs",
+      "profile": "logical_wall",
+      "pass": true,
+      "notes": "ok; surfaces=GROUND/TRANSITION_UP/UNKNOWN/WALL",
+      "state_sequence": [
+        "BOOT",
+        "SELF_CHECK",
+        "SENSOR_CALIBRATION",
+        "SAFE_GROUND_READY",
+        "ARMED_GROUND",
+        "GROUND_TRACK",
+        "TRANSITION_CANDIDATE",
+        "SUCTION_PRECHARGE",
+        "APPROACH_TRANSITION",
+        "TRANSITION_UP",
+        "WALL_TRACK",
+        "HARD_FAULT"
+      ],
+      "output_csv": "sim\\results\\full_logical_wall_S19_kill_overrides_all_outputs.csv",
+      "max_speed_cmd": 500,
+      "max_steering_cmd": 30,
+      "max_logical_suction_request": 1200,
+      "max_hardware_suction_output": 0,
+      "fault_state": "HARD_FAULT"
+    },
+    "S20_control_period_overrun_fault": {
+      "name": "S20_control_period_overrun_fault",
+      "profile": "guard",
+      "pass": true,
+      "notes": "ok; surfaces=GROUND/UNKNOWN",
+      "state_sequence": [
+        "BOOT",
+        "SELF_CHECK",
+        "SENSOR_CALIBRATION",
+        "SAFE_GROUND_READY",
+        "ARMED_GROUND",
+        "GROUND_TRACK",
+        "GROUND_FAULT"
+      ],
+      "output_csv": "sim\\results\\full_guard_S20_control_period_overrun_fault.csv",
+      "max_speed_cmd": 500,
+      "max_steering_cmd": 0,
+      "max_logical_suction_request": 0,
+      "max_hardware_suction_output": 0,
+      "fault_state": "GROUND_FAULT"
     }
   },
   "safety": {

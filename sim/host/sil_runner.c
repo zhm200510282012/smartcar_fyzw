@@ -42,6 +42,7 @@ static int parse_input_line(const char *line, host_sil_input_t *input)
     int line_error;
     unsigned int signal_quality;
     int imu_fresh;
+    int imu_id_ok;
     int pitch_cdeg;
     int encoder_valid;
     long left_count;
@@ -49,10 +50,17 @@ static int parse_input_line(const char *line, host_sil_input_t *input)
     int left_speed_mm_s;
     int right_speed_mm_s;
     int power_ok;
+    int kill_switch;
+    int control_period_ok;
+    int force_app_state;
     int parsed;
 
+    imu_id_ok = 1;
+    kill_switch = 0;
+    control_period_ok = 1;
+    force_app_state = -1;
     parsed = sscanf(line,
-                    "%lu,%d,%d,%d,%d,%d,%u,%d,%d,%d,%ld,%ld,%d,%d,%d",
+                    "%lu,%d,%d,%d,%d,%d,%u,%d,%d,%d,%ld,%ld,%d,%d,%d,%d,%d,%d,%d",
                     &time_ms,
                     &manual_arm,
                     &suction_authorize,
@@ -67,8 +75,12 @@ static int parse_input_line(const char *line, host_sil_input_t *input)
                     &right_count,
                     &left_speed_mm_s,
                     &right_speed_mm_s,
-                    &power_ok);
-    if (parsed != 15) {
+                    &power_ok,
+                    &imu_id_ok,
+                    &kill_switch,
+                    &control_period_ok,
+                    &force_app_state);
+    if (parsed < 15) {
         return 0;
     }
 
@@ -80,6 +92,7 @@ static int parse_input_line(const char *line, host_sil_input_t *input)
     input->line_error = (s16)line_error;
     input->signal_quality = (u16)signal_quality;
     input->imu_fresh = imu_fresh ? APP_TRUE : APP_FALSE;
+    input->imu_id_ok = imu_id_ok ? APP_TRUE : APP_FALSE;
     input->pitch_cdeg = (s16)pitch_cdeg;
     input->encoder_valid = encoder_valid ? APP_TRUE : APP_FALSE;
     input->left_count = (s32)left_count;
@@ -87,15 +100,20 @@ static int parse_input_line(const char *line, host_sil_input_t *input)
     input->left_speed_mm_s = (s16)left_speed_mm_s;
     input->right_speed_mm_s = (s16)right_speed_mm_s;
     input->power_ok = power_ok ? APP_TRUE : APP_FALSE;
+    input->kill_switch = kill_switch ? APP_TRUE : APP_FALSE;
+    input->control_period_ok = control_period_ok ? APP_TRUE : APP_FALSE;
+    input->force_app_state = (s16)force_app_state;
     return 1;
 }
 
 static void write_output_header(FILE *out)
 {
     fputs("time_ms,app_state,surface_state,faults,drive_command_native,"
+          "left_drive_command_native,right_drive_command_native,"
           "steering_offset_us,steering_pulse_us,suction_mode,"
+          "steering_left_pulse_us,steering_right_pulse_us,"
           "logical_suction_request,hardware_suction_output,adhesion_risk,"
-          "state_elapsed_ms,transition_candidate,transition_up_observed\n",
+          "state_elapsed_ms,transition_candidate,transition_up_observed,kill_switch\n",
           out);
 }
 
@@ -107,21 +125,26 @@ static void write_output_line(FILE *out, const app_context_t *ctx, u32 now_ms)
     frame = app_telemetry_make_frame(ctx, now_ms);
     suction = bsp_suction_last_command();
     fprintf(out,
-            "%lu,%u,%u,%u,%d,%d,%u,%u,%u,%u,%u,%u,%u,%u\n",
+            "%lu,%u,%u,%u,%d,%d,%d,%d,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u\n",
             (unsigned long)frame.timestamp_ms,
             (unsigned int)frame.app_state,
             (unsigned int)frame.surface_state,
             (unsigned int)frame.faults,
             (int)frame.drive_command_native,
+            (int)ctx->left_drive_command_native,
+            (int)ctx->right_drive_command_native,
             (int)frame.steering_offset_us,
             (unsigned int)frame.steering_pulse_us,
             (unsigned int)suction.mode,
+            (unsigned int)ctx->steering_left_pulse_us,
+            (unsigned int)ctx->steering_right_pulse_us,
             (unsigned int)frame.suction_request_native,
             (unsigned int)bsp_suction_last_native_output(),
             (unsigned int)frame.adhesion_risk,
             (unsigned int)ctx->state_elapsed_ms,
             (unsigned int)ctx->transition_candidate,
-            (unsigned int)(ctx->surface_state == SURFACE_TRANSITION_UP || ctx->surface_state == SURFACE_WALL));
+            (unsigned int)(ctx->surface_state == SURFACE_TRANSITION_UP || ctx->surface_state == SURFACE_WALL),
+            (unsigned int)ctx->kill_switch);
 }
 
 static int run_tick_until(app_context_t *ctx, FILE *out, u32 target_time_ms)

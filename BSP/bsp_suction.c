@@ -1,5 +1,10 @@
+#ifndef HOST_SIL
+#include "AI8051U_GPIO.h"
+#include "AI8051U_PWM.h"
+#endif
 #include "bsp_suction.h"
 #include "../App/app_config.h"
+#include "board_map.h"
 
 static suction_command_t g_last_command;
 static u16 g_last_native_output;
@@ -16,8 +21,15 @@ static u16 clamp_native(u16 value)
 
 static void bsp_suction_write_native(u16 native_value)
 {
-    /* Native hardware write belongs only here. No register is written until board evidence exists. */
     g_last_native_output = native_value;
+#ifndef HOST_SIL
+    if (SUCTION_HW_VERIFIED == 0 || BOARD_SUCTION_SIGNAL_VERIFIED == 0 || SUCTION_BENCH_TEST_ENABLE == 0) {
+        PWM2N_OUT_DIS();
+        return;
+    }
+    UpdatePwmCh(PWM2, native_value);
+    PWM2N_OUT_EN();
+#endif
 }
 
 void bsp_suction_init(void)
@@ -28,6 +40,20 @@ void bsp_suction_init(void)
     g_last_command.hw_verified = SUCTION_HW_VERIFIED;
     g_last_command.feedback_valid = APP_FALSE;
     g_last_command.fault_code = FAULT_SUCTION_UNVERIFIED;
+#ifndef HOST_SIL
+    PWM2N_OUT_DIS();
+#endif
+    bsp_suction_write_native(SUCTION_SAFE_OFF_NATIVE);
+}
+
+void bsp_suction_force_off(void)
+{
+    g_last_command.mode = SUCTION_OFF;
+    g_last_command.command_native = SUCTION_SAFE_OFF_NATIVE;
+    g_last_command.armed = APP_FALSE;
+    g_last_command.hw_verified = APP_FALSE;
+    g_last_command.feedback_valid = APP_FALSE;
+    g_last_command.fault_code = (u8)(g_last_command.fault_code | FAULT_SUCTION_UNVERIFIED);
     bsp_suction_write_native(SUCTION_SAFE_OFF_NATIVE);
 }
 

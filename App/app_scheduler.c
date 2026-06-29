@@ -1,5 +1,6 @@
 #include "app_scheduler.h"
 #include "app_config.h"
+#include "app_output_arbitration.h"
 #include "app_state_machine.h"
 #include "app_safety.h"
 #include "../BSP/bsp_drive.h"
@@ -34,12 +35,16 @@ static u32 g_last_ui;
 static u8 control_or_wall_active(app_state_t state)
 {
     return (state == APP_STATE_ARMED_GROUND ||
+            state == APP_STATE_GROUND_TRACK ||
+            state == APP_STATE_TRANSITION_CANDIDATE ||
             state == APP_STATE_SUCTION_PRECHARGE ||
             state == APP_STATE_APPROACH_TRANSITION ||
             state == APP_STATE_TRANSITION_UP ||
             state == APP_STATE_WALL_TRACK ||
+            state == APP_STATE_CYLINDER_TRACK ||
             state == APP_STATE_TRANSITION_DOWN ||
-            state == APP_STATE_GROUND_RECOVERY);
+            state == APP_STATE_GROUND_RECOVERY ||
+            state == APP_STATE_SEESAW_PASS);
 }
 
 static void update_sensor_health(app_context_t *ctx, u32 now_ms)
@@ -55,7 +60,13 @@ static void update_sensor_health(app_context_t *ctx, u32 now_ms)
     }
     ctx->health.encoder_ok = ctx->encoder.valid;
     ctx->health.power_ok = bsp_power_is_ok();
+#ifdef HOST_SIL
+    ctx->health.control_period_ok = host_bsp_control_period_ok();
+    ctx->kill_switch = host_bsp_kill_switch();
+#else
     ctx->health.control_period_ok = APP_TRUE;
+    ctx->kill_switch = APP_FALSE;
+#endif
     ctx->health.suction_feedback_ok = SUCTION_FEEDBACK_AVAILABLE;
 
     if (ctx->health.power_ok == APP_FALSE) {
@@ -66,12 +77,16 @@ static void update_sensor_health(app_context_t *ctx, u32 now_ms)
     }
     if ((ctx->app_state == APP_STATE_TRANSITION_UP ||
          ctx->app_state == APP_STATE_WALL_TRACK ||
+         ctx->app_state == APP_STATE_CYLINDER_TRACK ||
          ctx->app_state == APP_STATE_TRANSITION_DOWN) &&
         (ctx->health.imu_fresh == APP_FALSE || ctx->health.encoder_ok == APP_FALSE)) {
         ctx->faults = (fault_code_t)(ctx->faults | FAULT_SENSOR_STALE);
     }
-    if (control_or_wall_active(ctx->app_state) && ctx->attitude.pitch_cdeg < -GROUND_PITCH_MAX_CDEG) {
-        ctx->faults = (fault_code_t)(ctx->faults | FAULT_SENSOR_STALE);
+    if (ctx->attitude.id_ok == APP_FALSE) {
+        ctx->faults = (fault_code_t)(ctx->faults | FAULT_IMU_INVALID);
+    }
+    if (ctx->health.control_period_ok == APP_FALSE) {
+        ctx->faults = (fault_code_t)(ctx->faults | FAULT_CONTROL_OVERRUN);
     }
 }
 
@@ -83,6 +98,17 @@ static u8 read_transition_candidate(void)
     return APP_FALSE;
 #endif
 }
+
+#ifdef HOST_SIL
+static void apply_host_fault_injection(app_context_t *ctx)
+{
+    s16 forced_state;
+    forced_state = host_bsp_force_app_state();
+    if (forced_state >= 0) {
+        ctx->app_state = (app_state_t)forced_state;
+    }
+}
+#endif
 
 void app_scheduler_init(void)
 {
@@ -118,6 +144,9 @@ void app_scheduler_run_due(app_context_t *ctx, u32 now_ms)
         ctx->surface_state = track_surface_state_update(ctx->surface_state, &ctx->attitude);
         feature_transition = track_features_detect_transition(&ctx->emag);
         ctx->surface_state = track_state_machine_step(ctx->surface_state, feature_transition);
+#ifdef HOST_SIL
+        apply_host_fault_injection(ctx);
+#endif
         app_state_machine_step(ctx, TASK_CONTROL_PERIOD_MS);
         update_sensor_health(ctx, now_ms);
 
@@ -135,8 +164,9 @@ void app_scheduler_run_due(app_context_t *ctx, u32 now_ms)
         ctrl_adhesion_update(ctx);
         app_safety_apply_profile(ctx, app_safety_select_profile(ctx));
         ctrl_vehicle_update(ctx);
-        bsp_drive_apply(ctx->drive_command_native);
-        bsp_steering_apply(ctx->steering_pulse_us);
+        app_output_arbitrate(ctx);
+        bsp_drive_apply_lr(ctx->left_drive_command_native, ctx->right_drive_command_native);
+        bsp_steering_apply_pair(ctx->steering_left_pulse_us, ctx->steering_right_pulse_us);
         bsp_suction_apply(&ctx->suction_cmd);
     }
 
