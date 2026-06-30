@@ -251,6 +251,7 @@ u16 bsp_suction_last_native_output(void)
     return g_suction_native_output;
 }
 
+#ifndef HOST_SIL_USE_REAL_EMAG_BSP
 void bsp_emag_init(void)
 {
 }
@@ -304,6 +305,7 @@ emag_sample_t bsp_emag_read(void)
     sample.valid = g_input.emag_valid;
     return sample;
 }
+#endif
 
 void bsp_imu_init(void)
 {

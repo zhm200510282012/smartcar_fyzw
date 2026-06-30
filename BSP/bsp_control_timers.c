@@ -1,5 +1,6 @@
 #include "bsp_control_timers.h"
 #include "bsp_timebase.h"
+#include "bsp_timing_scope.h"
 #include "../App/app_config.h"
 #include "../App/app_control_tick.h"
 
@@ -31,7 +32,7 @@ void bsp_control_timers_init(void)
 {
     g_timer_config.sensor_timer = BSP_SENSOR_TIMER_NAME;
     g_timer_config.control_timer = BSP_CONTROL_TIMER_NAME;
-    g_timer_config.sensor_hz = SENSOR_FRAME_HZ;
+    g_timer_config.sensor_hz = SENSOR_ADC_TICK_HZ;
     g_timer_config.control_hz = CONTROL_PID_HZ;
     g_timer_config.sensor_priority = BSP_SENSOR_TIMER_PRIORITY;
     g_timer_config.control_priority = BSP_CONTROL_TIMER_PRIORITY;
@@ -46,7 +47,7 @@ void bsp_control_timers_init(void)
         tim.TIM_PS = 0u;
         tim.TIM_Run = ENABLE;
 
-        tim.TIM_Value = timer_reload_for_hz(SENSOR_FRAME_HZ);
+        tim.TIM_Value = timer_reload_for_hz(SENSOR_ADC_TICK_HZ);
         Timer_Inilize(Timer1, &tim);
         NVIC_Timer1_Init(ENABLE, BSP_SENSOR_TIMER_PRIORITY);
 
@@ -67,19 +68,23 @@ void bsp_sensor_timer1_isr(void) interrupt TMR1_VECTOR
 {
     app_context_t *ctx;
 
+    bsp_timing_scope_sensor_enter();
     ctx = app_control_tick_bound_context();
     if (ctx != 0) {
         app_control_tick_sensor_isr(ctx, bsp_timebase_now_ms());
     }
+    bsp_timing_scope_sensor_exit();
 }
 
 void bsp_control_timer11_isr(void) interrupt TMR11_VECTOR
 {
     app_context_t *ctx;
 
+    bsp_timing_scope_control_enter();
     ctx = app_control_tick_bound_context();
     if (ctx != 0) {
         app_control_tick_control_isr(ctx, bsp_timebase_now_ms());
     }
+    bsp_timing_scope_control_exit();
 }
 #endif

@@ -1,6 +1,7 @@
 #ifndef APP_CONFIG_H
 #define APP_CONFIG_H
 
+#include "app_types.h"
 #include "competition_profile.h"
 
 #ifdef HOST_SIL
@@ -13,8 +14,8 @@
 
 #define FYZW_MAIN_FOSC_HZ 40000000ul
 
-#define TASK_FAST_SENSOR_PERIOD_MS 1u
-#define TASK_CONTROL_PERIOD_MS 2u
+#define TASK_FAST_SENSOR_PERIOD_MS (1000u / SENSOR_ADC_TICK_HZ)
+#define TASK_CONTROL_PERIOD_MS (1000u / CONTROL_PID_HZ)
 #define TASK_ADHESION_PERIOD_MS 5u
 #define TASK_SPEED_PERIOD_MS 10u
 #define TASK_TRACK_PERIOD_MS 20u

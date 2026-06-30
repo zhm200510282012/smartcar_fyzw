@@ -4,13 +4,13 @@
 #include "app_types.h"
 
 typedef struct {
-    u16 sensor_isr_max_us;
-    u16 control_isr_max_us;
-    u16 sensor_overrun_count;
-    u16 control_overrun_count;
     u16 sensor_frame_sequence;
     u16 control_tick_count;
     u16 speed_pi_pair_calls;
+    u16 sensor_frame_stale_count;
+    u16 control_no_new_frame_count;
+    u16 control_skipped_duplicate_frame_count;
+    u16 control_deadline_miss_count;
     u8 last_sensor_frame_complete;
     u8 last_control_used_adc;
 } app_control_tick_stats_t;

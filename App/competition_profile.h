@@ -16,13 +16,12 @@
 #define LINE_FILTER_ALPHA 3
 #define LINE_FILTER_DENOM 4
 
-/* 硬件定时任务：传感器帧 1000 Hz，控制 PID 500 Hz。 */
-#define SENSOR_FRAME_HZ 1000u
-#define CONTROL_PID_HZ 500u
+/* Timer1 ADC tick -> complete A-E frame -> Timer11 control PID. */
+#define SENSOR_ADC_TICK_HZ 1000u
+#define SENSOR_FRAME_HZ (SENSOR_ADC_TICK_HZ / EMAG_CHANNEL_COUNT)
+#define CONTROL_PID_HZ SENSOR_FRAME_HZ
 /* 传感器完整帧过期阈值，单位 ms；调大可抗抖，调小更保守。 */
 #define SENSOR_STALE_TIMEOUT_MS 8u
-/* 控制 ISR 超时统计阈值，单位 us；只作诊断，不自动放宽安全门。 */
-#define CONTROL_OVERRUN_LIMIT_US 800u
 
 #define ELEMENT_ACTIVE_ENTER_NORM 180u
 #define ELEMENT_ACTIVE_EXIT_NORM 110u
@@ -195,6 +194,14 @@
 
 #if (FAN_BENCH_TEST_ENABLE != 0) && (WALL_RUN_ENABLE != 0)
 #error FAN_BENCH_TEST_ENABLE requires WALL_RUN_ENABLE=0.
+#endif
+
+#if ((SENSOR_ADC_TICK_HZ % EMAG_CHANNEL_COUNT) != 0u)
+#error SENSOR_ADC_TICK_HZ must be divisible by EMAG_CHANNEL_COUNT.
+#endif
+
+#if (CONTROL_PID_HZ > SENSOR_FRAME_HZ)
+#error CONTROL_PID_HZ must not exceed SENSOR_FRAME_HZ.
 #endif
 
 #if (IMU_PITCH_SIGN != 1) && (IMU_PITCH_SIGN != -1)

@@ -416,6 +416,11 @@
               <FilePath>..\BSP\bsp_control_timers.c</FilePath>
             </File>
             <File>
+              <FileName>bsp_timing_scope.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\bsp_timing_scope.c</FilePath>
+            </File>
+            <File>
               <FileName>bsp_drive.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\BSP\bsp_drive.c</FilePath>
@@ -469,6 +474,11 @@
               <FileName>bsp_control_timers.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\BSP\bsp_control_timers.h</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_timing_scope.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\BSP\bsp_timing_scope.h</FilePath>
             </File>
           </Files>
         </Group>

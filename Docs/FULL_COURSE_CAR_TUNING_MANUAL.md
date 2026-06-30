@@ -96,3 +96,11 @@
 3. 右直角、环岛、十字共享入口先看 active element count burst。默认 `ELEMENT_SPECIAL_DIRECTION_CONFIGURED=0`，只输出通用特殊元素候选，不猜右直角或环岛方向。
 4. 风机 P2.2/PWM2P_3 正常链路仍为 `track_wall_logic -> ctrl_adhesion -> app_output_arbitrate -> bsp_fan_esc_apply`。默认 `FAN_ESC_PHYSICAL_OUTPUT_ENABLE=0`、`WALL_RUN_ENABLE=0`、`SUCTION_HW_VERIFIED=0`、`FAN_BENCH_TEST_ENABLE=0`，不得上墙。
 5. 独立风机台架只允许临时打开 `FAN_BENCH_TEST_ENABLE`，且必须固定车体、示波确认 P2.2 脉宽、保持 `WALL_RUN_ENABLE=0`。台架通过不等于上墙通过。
+
+## 2026-06-30 补充：frame 频率修正
+
+1. `Timer1` 是单通道 ADC tick，默认 `SENSOR_ADC_TICK_HZ=1000 Hz`，每 1 ms 只采 A/B/C/D/E 中的一路。
+2. 完整五路电磁 frame 默认只有 `SENSOR_FRAME_HZ=200 Hz`，因为五个 tick 才能组成一帧。
+3. `Timer11` 控制 PID 默认 `CONTROL_PID_HZ=200 Hz`，每 5 ms 只消费一个新完整 frame。
+4. 没有新 frame 时控制链不重复跑 PI；frame stale 时进入既有丢线/停轮安全路径。
+5. 没有示波器实测前，不得宣称控制 ISR 已满足微秒级执行时间指标。

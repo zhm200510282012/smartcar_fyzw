@@ -6,7 +6,9 @@
 #include "../../App/app_scheduler.h"
 #include "../../App/app_state_machine.h"
 #include "../../BSP/bsp_drive.h"
+#include "../../BSP/bsp_emag.h"
 #include "../../BSP/bsp_fan_esc.h"
+#include "../../BSP/bsp_timing_scope.h"
 #include "../../BSP/bsp_timebase.h"
 #include "../../Control/ctrl_adhesion.h"
 #include "../../Track/track_features.h"
@@ -66,6 +68,10 @@ static void setup_context(app_context_t *ctx)
     ctx->surface_state = SURFACE_GROUND;
     app_scheduler_init();
     app_control_tick_bind_context(ctx);
+#ifdef HOST_SIL_REAL_EMAG_SCAN
+    bsp_emag_init();
+    bsp_emag_host_set_raw(0u, 0u, LINE_QUALITY_MIN, 0u, 0u, APP_TRUE);
+#endif
 }
 
 static emag_sample_t make_emag(u16 a, u16 b, u16 c, u16 d, u16 e, u16 quality, u8 valid)
@@ -96,58 +102,30 @@ static emag_sample_t make_emag(u16 a, u16 b, u16 c, u16 d, u16 e, u16 quality, u
     return sample;
 }
 
-static int timer01_sensor_tick_no_pid(FILE *out)
+static int timer_fix01_frequency_relationship(FILE *out)
 {
-    app_context_t ctx;
-    app_control_tick_stats_t stats;
     int pass;
 
-    setup_context(&ctx);
-    app_control_tick_sensor_isr(&ctx, 0ul);
-    stats = app_control_tick_stats();
-    pass = (stats.sensor_frame_sequence == 1u &&
-            stats.control_tick_count == 0u &&
-            stats.speed_pi_pair_calls == 0u);
-    write_result(out, "TIMER01", pass, "sensor tick does not call control PI", stats.sensor_frame_sequence, stats.control_tick_count, stats.speed_pi_pair_calls);
+    pass = (SENSOR_ADC_TICK_HZ == 1000u &&
+            SENSOR_FRAME_HZ == (SENSOR_ADC_TICK_HZ / EMAG_CHANNEL_COUNT) &&
+            SENSOR_FRAME_HZ == 200u &&
+            CONTROL_PID_HZ == SENSOR_FRAME_HZ);
+    write_result(out, "TIMER_FIX01", pass, "1000 Hz ADC tick derives 200 Hz frame and PID rates", SENSOR_ADC_TICK_HZ, SENSOR_FRAME_HZ, CONTROL_PID_HZ);
     return pass;
 }
 
-static int timer02_control_tick_no_adc(FILE *out)
+static int timer_fix02_pid_not_above_frame(FILE *out)
 {
-    app_context_t ctx;
-    app_control_tick_stats_t stats;
     int pass;
 
-    setup_context(&ctx);
-    app_control_tick_sensor_isr(&ctx, 0ul);
-    app_control_tick_control_isr(&ctx, 1ul);
-    stats = app_control_tick_stats();
-    pass = (stats.control_tick_count == 1u &&
-            stats.speed_pi_pair_calls == 1u &&
-            stats.last_control_used_adc == APP_FALSE);
-    write_result(out, "TIMER02", pass, "control tick consumes frame without ADC read flag", stats.control_tick_count, stats.speed_pi_pair_calls, stats.last_control_used_adc);
+    pass = (CONTROL_PID_HZ <= SENSOR_FRAME_HZ &&
+            TASK_FAST_SENSOR_PERIOD_MS == 1u &&
+            TASK_CONTROL_PERIOD_MS == 5u);
+    write_result(out, "TIMER_FIX02", pass, "control PID rate does not exceed complete frame rate", TASK_FAST_SENSOR_PERIOD_MS, TASK_CONTROL_PERIOD_MS, CONTROL_PID_HZ);
     return pass;
 }
 
-static int timer03_one_pi_pair_per_control(FILE *out)
-{
-    app_context_t ctx;
-    app_control_tick_stats_t before;
-    app_control_tick_stats_t after;
-    int pass;
-
-    setup_context(&ctx);
-    app_control_tick_sensor_isr(&ctx, 0ul);
-    before = app_control_tick_stats();
-    app_control_tick_control_isr(&ctx, 1ul);
-    after = app_control_tick_stats();
-    pass = ((u16)(after.speed_pi_pair_calls - before.speed_pi_pair_calls) == 1u &&
-            (u16)(after.control_tick_count - before.control_tick_count) == 1u);
-    write_result(out, "TIMER03", pass, "one dual-wheel PI update per control tick", before.speed_pi_pair_calls, after.speed_pi_pair_calls, after.control_tick_count);
-    return pass;
-}
-
-static int timer04_scheduler_no_duplicate(FILE *out)
+static int timer_fix03_five_ticks_one_sequence(FILE *out)
 {
     app_context_t ctx;
     app_control_tick_stats_t stats;
@@ -155,39 +133,140 @@ static int timer04_scheduler_no_duplicate(FILE *out)
     int pass;
 
     setup_context(&ctx);
-    for (i = 0u; i < 10u; i++) {
-        bsp_timebase_on_tick_1ms();
-        app_scheduler_run_due(&ctx, bsp_timebase_now_ms());
+    for (i = 0u; i < (EMAG_CHANNEL_COUNT - 1u); i++) {
+        app_control_tick_sensor_isr(&ctx, i);
     }
     stats = app_control_tick_stats();
-    pass = (stats.control_tick_count > 0u &&
-            stats.speed_pi_pair_calls == stats.control_tick_count &&
-            stats.sensor_frame_sequence >= stats.control_tick_count);
-    write_result(out, "TIMER04", pass, "Host scheduler does not duplicate control PI calls", stats.sensor_frame_sequence, stats.control_tick_count, stats.speed_pi_pair_calls);
+    pass = (stats.sensor_frame_sequence == 0u && stats.speed_pi_pair_calls == 0u);
+    app_control_tick_sensor_isr(&ctx, EMAG_CHANNEL_COUNT);
+    stats = app_control_tick_stats();
+    pass = (pass && stats.sensor_frame_sequence == 1u && stats.control_tick_count == 0u);
+    write_result(out, "TIMER_FIX03", pass, "five 1 ms sensor ticks publish one complete frame sequence", stats.sensor_frame_sequence, stats.control_tick_count, stats.speed_pi_pair_calls);
     return pass;
 }
 
-static int timer05_bound_context(FILE *out)
+static int timer_fix04_one_pid_per_sequence(FILE *out)
 {
     app_context_t ctx;
+    app_control_tick_stats_t stats;
+    u8 i;
     int pass;
 
     setup_context(&ctx);
-    pass = (app_control_tick_bound_context() == &ctx);
-    write_result(out, "TIMER05", pass, "hardware ISR context binding is explicit", app_control_tick_bound_context() == &ctx, 0, 0);
+    for (i = 0u; i < EMAG_CHANNEL_COUNT; i++) {
+        app_control_tick_sensor_isr(&ctx, i);
+    }
+    app_control_tick_control_isr(&ctx, 5ul);
+    app_control_tick_control_isr(&ctx, 10ul);
+    stats = app_control_tick_stats();
+    pass = (stats.control_tick_count == 2u &&
+            stats.speed_pi_pair_calls == 1u &&
+            stats.control_skipped_duplicate_frame_count == 1u);
+    write_result(out, "TIMER_FIX04", pass, "same frame sequence triggers only one full PID chain", stats.control_tick_count, stats.speed_pi_pair_calls, stats.control_skipped_duplicate_frame_count);
     return pass;
 }
 
-static int timer06_stale_frame_lost(FILE *out)
+static int timer_fix05_no_new_frame_skips_pi(FILE *out)
 {
     app_context_t ctx;
+    app_control_tick_stats_t stats;
     int pass;
 
     setup_context(&ctx);
-    app_control_tick_sensor_isr(&ctx, 0ul);
+    app_control_tick_control_isr(&ctx, 5ul);
+    stats = app_control_tick_stats();
+    pass = (stats.control_tick_count == 1u &&
+            stats.speed_pi_pair_calls == 0u &&
+            stats.control_no_new_frame_count == 1u);
+    write_result(out, "TIMER_FIX05", pass, "Timer11 without a complete new frame skips speed PI", stats.control_tick_count, stats.speed_pi_pair_calls, stats.control_no_new_frame_count);
+    return pass;
+}
+
+static int timer_fix06_stale_frame_safety(FILE *out)
+{
+    app_context_t ctx;
+    app_control_tick_stats_t stats;
+    u8 i;
+    int pass;
+
+    setup_context(&ctx);
+    for (i = 0u; i < EMAG_CHANNEL_COUNT; i++) {
+        app_control_tick_sensor_isr(&ctx, i);
+    }
     app_control_tick_control_isr(&ctx, (u32)SENSOR_STALE_TIMEOUT_MS + 20ul);
-    pass = (ctx.emag.valid == APP_FALSE && ctx.emag.line_lost != APP_FALSE);
-    write_result(out, "TIMER06", pass, "stale sensor frame becomes line lost", ctx.emag.valid, ctx.emag.line_lost, ctx.health.emag_ok);
+    stats = app_control_tick_stats();
+    pass = (ctx.emag.valid == APP_FALSE &&
+            ctx.emag.line_lost != APP_FALSE &&
+            stats.sensor_frame_stale_count == 1u &&
+            stats.control_deadline_miss_count == 1u);
+    write_result(out, "TIMER_FIX06", pass, "stale frame enters line-lost safety path", ctx.emag.valid, stats.sensor_frame_stale_count, stats.control_deadline_miss_count);
+    return pass;
+}
+
+static int timer_fix07_no_torn_frame(FILE *out)
+{
+    emag_frame_t frame;
+    u8 i;
+    int pass;
+
+    bsp_emag_init();
+    bsp_emag_host_set_raw(101u, 102u, 103u, 104u, 105u, APP_TRUE);
+    for (i = 0u; i < EMAG_CHANNEL_COUNT; i++) {
+        bsp_emag_sensor_tick(i);
+    }
+    bsp_emag_host_begin_read_for_test();
+    bsp_emag_host_set_raw(201u, 202u, 203u, 204u, 205u, APP_TRUE);
+    for (i = 0u; i < EMAG_CHANNEL_COUNT; i++) {
+        bsp_emag_sensor_tick((u32)(10u + i));
+    }
+    pass = (bsp_emag_host_copy_locked_frame_for_test(&frame) != APP_FALSE &&
+            frame.sequence == 1u &&
+            frame.raw[0] == 101u &&
+            frame.raw[1] == 102u &&
+            frame.raw[2] == 103u &&
+            frame.raw[3] == 104u &&
+            frame.raw[4] == 105u);
+    bsp_emag_host_end_read_for_test();
+    write_result(out, "TIMER_FIX07", pass, "reader lock copies one complete sequence without torn channels", frame.sequence, frame.raw[0], frame.raw[4]);
+    return pass;
+}
+
+static int timer_fix08_write_avoids_front_and_reader(FILE *out)
+{
+    u8 front;
+    u8 write;
+    u8 reader;
+    u8 i;
+    int pass;
+
+    bsp_emag_init();
+    bsp_emag_host_set_raw(11u, 12u, 13u, 14u, 15u, APP_TRUE);
+    for (i = 0u; i < EMAG_CHANNEL_COUNT; i++) {
+        bsp_emag_sensor_tick(i);
+    }
+    bsp_emag_host_begin_read_for_test();
+    bsp_emag_host_set_raw(21u, 22u, 23u, 24u, 25u, APP_TRUE);
+    for (i = 0u; i < EMAG_CHANNEL_COUNT; i++) {
+        bsp_emag_sensor_tick((u32)(20u + i));
+    }
+    bsp_emag_host_debug_indices(&front, &write, &reader);
+    pass = (write != front && write != reader && front != reader);
+    bsp_emag_host_end_read_for_test();
+    write_result(out, "TIMER_FIX08", pass, "triple buffer write index avoids front and reader", front, write, reader);
+    return pass;
+}
+
+static int timer_fix09_scope_default_noop(FILE *out)
+{
+    int pass;
+
+    bsp_timing_scope_sensor_enter();
+    bsp_timing_scope_sensor_exit();
+    bsp_timing_scope_control_enter();
+    bsp_timing_scope_control_exit();
+    pass = (BSP_TIMING_SCOPE_ENABLE == 0 &&
+            bsp_timing_scope_debug_transition_count() == 0u);
+    write_result(out, "TIMER_FIX09", pass, "timing scope no-op when disabled", BSP_TIMING_SCOPE_ENABLE, bsp_timing_scope_debug_transition_count(), 0);
     return pass;
 }
 
@@ -406,12 +485,15 @@ int main(int argc, char **argv)
     total = 0;
 
 #define RUN_SCENARIO(fn) do { total++; if ((fn)(out)) passed++; } while (0)
-    RUN_SCENARIO(timer01_sensor_tick_no_pid);
-    RUN_SCENARIO(timer02_control_tick_no_adc);
-    RUN_SCENARIO(timer03_one_pi_pair_per_control);
-    RUN_SCENARIO(timer04_scheduler_no_duplicate);
-    RUN_SCENARIO(timer05_bound_context);
-    RUN_SCENARIO(timer06_stale_frame_lost);
+    RUN_SCENARIO(timer_fix01_frequency_relationship);
+    RUN_SCENARIO(timer_fix02_pid_not_above_frame);
+    RUN_SCENARIO(timer_fix03_five_ticks_one_sequence);
+    RUN_SCENARIO(timer_fix04_one_pid_per_sequence);
+    RUN_SCENARIO(timer_fix05_no_new_frame_skips_pi);
+    RUN_SCENARIO(timer_fix06_stale_frame_safety);
+    RUN_SCENARIO(timer_fix07_no_torn_frame);
+    RUN_SCENARIO(timer_fix08_write_avoids_front_and_reader);
+    RUN_SCENARIO(timer_fix09_scope_default_noop);
     RUN_SCENARIO(element01_baseline_no_burst);
     RUN_SCENARIO(element02_burst_confirm);
     RUN_SCENARIO(element03_rising_edge_once);

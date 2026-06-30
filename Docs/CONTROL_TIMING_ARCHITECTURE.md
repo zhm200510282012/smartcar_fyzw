@@ -1,41 +1,83 @@
 # 控制时序架构
 
-当前真实控制链拆成两个周期：
+当前实时链路明确区分三种频率：
 
-| 周期 | 默认频率 | 入口 | 职责 | 禁止事项 |
-|---|---:|---|---|---|
-| 传感 tick | `SENSOR_FRAME_HZ=1000 Hz` | `Timer1 -> app_control_tick_sensor_isr()` | 五路电磁按 A/B/C/D/E 分时采样，提交完整 frame | 不调用 PID，不写电机，不写风机 |
-| 控制 tick | `CONTROL_PID_HZ=500 Hz` | `Timer11 -> app_control_tick_control_isr()` | 消费完整电磁 frame，读编码器/IMU，运行 line、状态机、模糊转向、双轮 PI、风机逻辑、输出仲裁 | 不直接轮询五路 ADC |
-| 低频 scheduler | `app_scheduler_run_due()` | 主循环 | UI、健康检查、低频编排 | 非 `HOST_SIL` 不重复调用快速 sensor/control tick |
+| 概念 | 宏 | 默认值 | 含义 |
+|---|---|---:|---|
+| 单通道 ADC tick | `SENSOR_ADC_TICK_HZ` | 1000 Hz | Timer1 每次只采一个电磁 ADC 通道 |
+| 完整五路 frame | `SENSOR_FRAME_HZ` | 200 Hz | A/B/C/D/E 五个 tick 后才发布一个完整 frame |
+| 控制 PID | `CONTROL_PID_HZ` | 200 Hz | Timer11 消费新完整 frame 后运行一次完整控制链 |
+
+约束：
+
+```c
+SENSOR_FRAME_HZ = SENSOR_ADC_TICK_HZ / EMAG_CHANNEL_COUNT
+CONTROL_PID_HZ <= SENSOR_FRAME_HZ
+```
 
 ## 真实目标路径
 
 ```text
-Timer1 ISR
+Timer1, 1 ms
+-> app_control_tick_sensor_isr()
 -> bsp_emag_sensor_tick()
--> 完整五路 frame 提交
+-> 每 tick 只采 A/B/C/D/E 中一个通道
+-> 五个 tick 后发布一个完整 frame sequence
 
-Timer11 ISR
--> 读取最新完整 frame
--> ctrl_line_update()
--> track_features_update_elements()
--> track_route_profile_select()
--> ctrl_fuzzy_turn_update()
--> ctrl_speed_update_pair()
--> ctrl_adhesion_update()
--> app_output_arbitrate()
--> bsp_drive_apply_lr()
--> bsp_fan_esc_apply()
+Timer11, 5 ms
+-> app_control_tick_control_isr()
+-> 只在拿到新完整 sequence 时运行完整控制链
 ```
 
-`Timer11` 中如果 frame 缺失或超过 `SENSOR_STALE_TIMEOUT_MS`，电磁样本被标为 invalid/line_lost，输出链按现有安全策略归零或保持禁能。
+完整控制链包括：
+
+```text
+line
+-> filter/rate/quality
+-> element burst feature
+-> route/state
+-> basic PD or fuzzy turn
+-> differential mix
+-> left/right speed PI
+-> wall/fan logic
+-> output arbitration
+-> drive/fan BSP
+```
+
+## 无新 frame 行为
+
+如果 Timer11 本次没有新完整 frame，或 sequence 与上次已消费 frame 相同，则不重复运行：
+
+```text
+ctrl_line_update
+ctrl_fuzzy_turn_update
+ctrl_speed_update_pair
+ctrl_differential_drive_mix
+track_wall_logic_update
+app_output_arbitrate
+```
+
+此时保持上一周期输出。若 frame 超过 `SENSOR_STALE_TIMEOUT_MS`，则进入既有 line_lost/安全停轮路径，不允许保持旧高速输出。
+
+## 三缓冲发布
+
+`BSP/bsp_emag.c` 使用 3 个 frame buffer：
+
+```text
+front  = 最新已发布完整 frame
+reader = control ISR 正在字段级复制的 frame
+write  = sensor ISR 正在写入的下一帧
+```
+
+sensor ISR 发布 frame 时只切换 `g_front_index`，随后选择一个既不是 front 也不是 reader 的 buffer 作为下一帧 write。control ISR 只在极短临界区锁定 front index 到 reader，随后恢复 Timer1 中断并字段级复制。
 
 ## Host-SIL 路径
 
-Host-SIL 没有真实硬件中断，仍通过 scheduler 在固定时间推进两类 tick。新增测试 `timing_element_fan` 验证：
+Host-SIL scheduler 按真实频率模拟：
 
-- sensor tick 不调用双轮 PI；
-- control tick 每次只调用一次 `ctrl_speed_update_pair()`；
-- control tick 不直接标记 ADC 读取；
-- stale sensor frame 会进入 line_lost；
-- Host-SIL 通过不代表实车时序和中断延迟已验证。
+```text
+sensor tick: 每 1 ms
+control tick: 每 5 ms
+```
+
+`timing_element_fan` runner 使用真实 `BSP/bsp_emag.c` 扫描路径验证：五个 sensor tick 才产生一个新 sequence，同一 sequence 只触发一次完整 PID 链，三缓冲不会产生 A/B 为新帧而 C/D/E 为旧帧的撕裂 frame。

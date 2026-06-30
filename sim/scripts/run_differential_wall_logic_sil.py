@@ -24,6 +24,7 @@ SOURCES = [
     "App/app_params.c",
     "BSP/bsp_control_timers.c",
     "BSP/bsp_fan_esc.c",
+    "BSP/bsp_timing_scope.c",
     "Control/ctrl_adhesion.c",
     "Control/ctrl_attitude.c",
     "Control/ctrl_differential_drive.c",

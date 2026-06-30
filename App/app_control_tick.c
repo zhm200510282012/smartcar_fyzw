@@ -47,11 +47,13 @@ static ctrl_adhesion_state_t g_adhesion_state;
 static u16 g_line_lost_elapsed_ms;
 static app_control_tick_stats_t g_stats;
 static app_context_t *g_bound_context;
+static u16 g_last_consumed_frame_sequence;
 
-#ifdef HOST_SIL
+#if defined(HOST_SIL) && !defined(HOST_SIL_REAL_EMAG_SCAN)
 static emag_sample_t g_host_sensor_sample;
 static u32 g_host_sensor_timestamp_ms;
 static u8 g_host_sensor_complete;
+static u16 g_host_sensor_sequence;
 #endif
 
 #if FAN_BENCH_TEST_ENABLE != 0
@@ -82,6 +84,11 @@ static void make_stale_emag(emag_sample_t *sample)
     sample->line_lost = APP_TRUE;
     sample->valid = APP_FALSE;
 }
+
+#define CONTROL_FRAME_NONE 0u
+#define CONTROL_FRAME_NEW 1u
+#define CONTROL_FRAME_DUPLICATE 2u
+#define CONTROL_FRAME_STALE 3u
 
 static void update_sensor_health(app_context_t *ctx, u32 now_ms)
 {
@@ -371,22 +378,38 @@ static u8 wall_process_active(const track_route_event_t *route_event)
     return APP_FALSE;
 }
 
-static void load_latest_emag_sample(app_context_t *ctx, u32 now_ms)
+static u8 load_latest_emag_sample(app_context_t *ctx, u32 now_ms)
 {
-#ifdef HOST_SIL
+#if defined(HOST_SIL) && !defined(HOST_SIL_REAL_EMAG_SCAN)
     if (g_host_sensor_complete == APP_FALSE ||
         (now_ms - g_host_sensor_timestamp_ms) > SENSOR_STALE_TIMEOUT_MS) {
         make_stale_emag(&ctx->emag);
-    } else {
-        ctx->emag = g_host_sensor_sample;
+        if (g_host_sensor_complete == APP_FALSE) {
+            return CONTROL_FRAME_NONE;
+        }
+        return CONTROL_FRAME_STALE;
     }
+    if (g_host_sensor_sequence == g_last_consumed_frame_sequence) {
+        return CONTROL_FRAME_DUPLICATE;
+    }
+    ctx->emag = g_host_sensor_sample;
+    g_last_consumed_frame_sequence = g_host_sensor_sequence;
+    return CONTROL_FRAME_NEW;
 #else
     emag_frame_t frame;
-    if (bsp_emag_latest_frame(&frame) == APP_FALSE ||
-        (now_ms - frame.timestamp_ms) > SENSOR_STALE_TIMEOUT_MS) {
+    if (bsp_emag_latest_frame(&frame) == APP_FALSE) {
+        return CONTROL_FRAME_NONE;
+    }
+    if ((now_ms - frame.timestamp_ms) > SENSOR_STALE_TIMEOUT_MS) {
         make_stale_emag(&ctx->emag);
+        return CONTROL_FRAME_STALE;
+    }
+    if (frame.sequence == g_last_consumed_frame_sequence) {
+        return CONTROL_FRAME_DUPLICATE;
     } else {
         ctx->emag = bsp_emag_sample_from_frame(&frame);
+        g_last_consumed_frame_sequence = frame.sequence;
+        return CONTROL_FRAME_NEW;
     }
 #endif
 }
@@ -435,19 +458,21 @@ void app_control_tick_init(void)
     ctrl_adhesion_init(&g_adhesion_state);
     track_features_reset();
     g_line_lost_elapsed_ms = 0u;
-    g_stats.sensor_isr_max_us = 0u;
-    g_stats.control_isr_max_us = 0u;
-    g_stats.sensor_overrun_count = 0u;
-    g_stats.control_overrun_count = 0u;
+    g_last_consumed_frame_sequence = 0u;
     g_stats.sensor_frame_sequence = 0u;
     g_stats.control_tick_count = 0u;
     g_stats.speed_pi_pair_calls = 0u;
+    g_stats.sensor_frame_stale_count = 0u;
+    g_stats.control_no_new_frame_count = 0u;
+    g_stats.control_skipped_duplicate_frame_count = 0u;
+    g_stats.control_deadline_miss_count = 0u;
     g_stats.last_sensor_frame_complete = APP_FALSE;
     g_stats.last_control_used_adc = APP_FALSE;
-#ifdef HOST_SIL
+#if defined(HOST_SIL) && !defined(HOST_SIL_REAL_EMAG_SCAN)
     make_stale_emag(&g_host_sensor_sample);
     g_host_sensor_timestamp_ms = 0ul;
     g_host_sensor_complete = APP_FALSE;
+    g_host_sensor_sequence = 0u;
 #endif
 #if FAN_BENCH_TEST_ENABLE != 0
     g_fan_bench_elapsed_ms = 0u;
@@ -469,11 +494,12 @@ void app_control_tick_sensor_isr(app_context_t *ctx, u32 now_ms)
     if (ctx == 0) {
         return;
     }
-#ifdef HOST_SIL
+#if defined(HOST_SIL) && !defined(HOST_SIL_REAL_EMAG_SCAN)
     g_host_sensor_sample = bsp_emag_read();
     g_host_sensor_timestamp_ms = now_ms;
     g_host_sensor_complete = APP_TRUE;
-    g_stats.sensor_frame_sequence++;
+    g_host_sensor_sequence++;
+    g_stats.sensor_frame_sequence = g_host_sensor_sequence;
     g_stats.last_sensor_frame_complete = APP_TRUE;
 #else
     emag_frame_t frame;
@@ -501,6 +527,7 @@ void app_control_tick_control_isr(app_context_t *ctx, u32 now_ms)
     track_wall_output_t wall_output;
     track_element_feature_t element_feature;
     u16 dt_ms;
+    u8 frame_status;
 
     if (ctx == 0) {
         return;
@@ -510,7 +537,19 @@ void app_control_tick_control_isr(app_context_t *ctx, u32 now_ms)
     g_stats.control_tick_count++;
     g_stats.last_control_used_adc = APP_FALSE;
 
-    load_latest_emag_sample(ctx, now_ms);
+    frame_status = load_latest_emag_sample(ctx, now_ms);
+    if (frame_status == CONTROL_FRAME_NONE) {
+        g_stats.control_no_new_frame_count++;
+        return;
+    }
+    if (frame_status == CONTROL_FRAME_DUPLICATE) {
+        g_stats.control_skipped_duplicate_frame_count++;
+        return;
+    }
+    if (frame_status == CONTROL_FRAME_STALE) {
+        g_stats.sensor_frame_stale_count++;
+        g_stats.control_deadline_miss_count++;
+    }
     ctx->encoder = bsp_encoder_read();
     ctx->attitude = bsp_imu_read();
 
