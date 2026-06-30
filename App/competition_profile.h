@@ -16,9 +16,10 @@
 #define LINE_FILTER_ALPHA 3
 #define LINE_FILTER_DENOM 4
 
-/* Timer1 ADC tick -> complete A-E frame -> Timer11 control PID. */
+/* Timer1 ADC tick -> complete A-E frame -> Timer0-divided control PID. */
 #define SENSOR_ADC_TICK_HZ 1000u
 #define SENSOR_FRAME_HZ (SENSOR_ADC_TICK_HZ / EMAG_CHANNEL_COUNT)
+#define TIMEBASE_TICK_HZ 1000u
 #define CONTROL_PID_HZ SENSOR_FRAME_HZ
 /* 传感器完整帧过期阈值，单位 ms；调大可抗抖，调小更保守。 */
 #define SENSOR_STALE_TIMEOUT_MS 8u
@@ -202,6 +203,10 @@
 
 #if (CONTROL_PID_HZ > SENSOR_FRAME_HZ)
 #error CONTROL_PID_HZ must not exceed SENSOR_FRAME_HZ.
+#endif
+
+#if ((TIMEBASE_TICK_HZ % CONTROL_PID_HZ) != 0u)
+#error CONTROL_PID_HZ must divide TIMEBASE_TICK_HZ
 #endif
 
 #if (IMU_PITCH_SIGN != 1) && (IMU_PITCH_SIGN != -1)

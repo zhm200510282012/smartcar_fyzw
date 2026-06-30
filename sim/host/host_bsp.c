@@ -256,7 +256,7 @@ void bsp_emag_init(void)
 {
 }
 
-emag_sample_t bsp_emag_read(void)
+void bsp_emag_read(emag_sample_t *out)
 {
     emag_sample_t sample;
     u16 half_quality;
@@ -303,7 +303,9 @@ emag_sample_t bsp_emag_read(void)
     sample.channel_count = 5u;
     sample.line_lost = g_input.emag_valid ? APP_FALSE : APP_TRUE;
     sample.valid = g_input.emag_valid;
-    return sample;
+    if (out != 0) {
+        *out = sample;
+    }
 }
 #endif
 

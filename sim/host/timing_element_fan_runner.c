@@ -178,7 +178,7 @@ static int timer_fix05_no_new_frame_skips_pi(FILE *out)
     pass = (stats.control_tick_count == 1u &&
             stats.speed_pi_pair_calls == 0u &&
             stats.control_no_new_frame_count == 1u);
-    write_result(out, "TIMER_FIX05", pass, "Timer11 without a complete new frame skips speed PI", stats.control_tick_count, stats.speed_pi_pair_calls, stats.control_no_new_frame_count);
+    write_result(out, "TIMER_FIX05", pass, "Timer0 control tick without a complete new frame skips speed PI", stats.control_tick_count, stats.speed_pi_pair_calls, stats.control_no_new_frame_count);
     return pass;
 }
 

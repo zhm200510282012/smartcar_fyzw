@@ -4,9 +4,9 @@
 #include "../App/app_types.h"
 
 #define BSP_SENSOR_TIMER_NAME "Timer1"
-#define BSP_CONTROL_TIMER_NAME "Timer11"
+#define BSP_CONTROL_TIMER_NAME "Timer0"
 #define BSP_SENSOR_TIMER_PRIORITY 3u
-#define BSP_CONTROL_TIMER_PRIORITY 2u
+#define BSP_CONTROL_TIMER_PRIORITY 1u
 
 typedef struct {
     const char *sensor_timer;

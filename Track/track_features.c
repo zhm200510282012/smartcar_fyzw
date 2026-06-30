@@ -27,17 +27,17 @@ static u8 popcount5(u8 value)
 static u8 update_active_mask(const emag_sample_t *emag)
 {
     u8 index;
-    u8 bit;
+    u8 channel_mask;
 
     for (index = 0u; index < EMAG_CHANNEL_COUNT; index++) {
-        bit = (u8)(1u << index);
-        if ((g_active_mask & bit) == 0u) {
+        channel_mask = (u8)(1u << index);
+        if ((g_active_mask & channel_mask) == 0u) {
             if (emag->norm[index] >= ELEMENT_ACTIVE_ENTER_NORM) {
-                g_active_mask = (u8)(g_active_mask | bit);
+                g_active_mask = (u8)(g_active_mask | channel_mask);
             }
         } else {
             if (emag->norm[index] <= ELEMENT_ACTIVE_EXIT_NORM) {
-                g_active_mask = (u8)(g_active_mask & (u8)(~bit));
+                g_active_mask = (u8)(g_active_mask & (u8)(~channel_mask));
             }
         }
     }

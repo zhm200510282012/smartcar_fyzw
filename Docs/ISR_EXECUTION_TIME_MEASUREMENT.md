@@ -42,7 +42,7 @@ void bsp_timing_scope_control_exit(void);
 
 ```text
 Timer1 ISR 入口拉高 SENSOR scope，退出拉低；
-Timer11 ISR 入口拉高 CONTROL scope，退出拉低；
+Timer0 控制分频 tick 入口拉高 CONTROL scope，退出拉低；
 示波器测 CONTROL 高电平宽度。
 ```
 

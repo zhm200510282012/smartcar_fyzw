@@ -5,7 +5,6 @@
 #include "../App/app_control_tick.h"
 
 #ifndef HOST_SIL
-#include "AI8051U.h"
 #include "AI8051U_NVIC.h"
 #include "AI8051U_Timer.h"
 #endif
@@ -50,10 +49,6 @@ void bsp_control_timers_init(void)
         tim.TIM_Value = timer_reload_for_hz(SENSOR_ADC_TICK_HZ);
         Timer_Inilize(Timer1, &tim);
         NVIC_Timer1_Init(ENABLE, BSP_SENSOR_TIMER_PRIORITY);
-
-        tim.TIM_Value = timer_reload_for_hz(CONTROL_PID_HZ);
-        Timer_Inilize(Timer11, &tim);
-        NVIC_Timer11_Init(ENABLE, BSP_CONTROL_TIMER_PRIORITY);
     }
 #endif
 }
@@ -74,17 +69,5 @@ void bsp_sensor_timer1_isr(void) interrupt TMR1_VECTOR
         app_control_tick_sensor_isr(ctx, bsp_timebase_now_ms());
     }
     bsp_timing_scope_sensor_exit();
-}
-
-void bsp_control_timer11_isr(void) interrupt TMR11_VECTOR
-{
-    app_context_t *ctx;
-
-    bsp_timing_scope_control_enter();
-    ctx = app_control_tick_bound_context();
-    if (ctx != 0) {
-        app_control_tick_control_isr(ctx, bsp_timebase_now_ms());
-    }
-    bsp_timing_scope_control_exit();
 }
 #endif

@@ -407,7 +407,7 @@ static u8 load_latest_emag_sample(app_context_t *ctx, u32 now_ms)
     if (frame.sequence == g_last_consumed_frame_sequence) {
         return CONTROL_FRAME_DUPLICATE;
     } else {
-        ctx->emag = bsp_emag_sample_from_frame(&frame);
+        bsp_emag_sample_from_frame(&frame, &ctx->emag);
         g_last_consumed_frame_sequence = frame.sequence;
         return CONTROL_FRAME_NEW;
     }
@@ -491,18 +491,21 @@ app_context_t *app_control_tick_bound_context(void)
 
 void app_control_tick_sensor_isr(app_context_t *ctx, u32 now_ms)
 {
+#if !defined(HOST_SIL) || defined(HOST_SIL_REAL_EMAG_SCAN)
+    emag_frame_t frame;
+#endif
+
     if (ctx == 0) {
         return;
     }
 #if defined(HOST_SIL) && !defined(HOST_SIL_REAL_EMAG_SCAN)
-    g_host_sensor_sample = bsp_emag_read();
+    bsp_emag_read(&g_host_sensor_sample);
     g_host_sensor_timestamp_ms = now_ms;
     g_host_sensor_complete = APP_TRUE;
     g_host_sensor_sequence++;
     g_stats.sensor_frame_sequence = g_host_sensor_sequence;
     g_stats.last_sensor_frame_complete = APP_TRUE;
 #else
-    emag_frame_t frame;
     bsp_emag_sensor_tick(now_ms);
     if (bsp_emag_latest_frame(&frame) != APP_FALSE) {
         g_stats.sensor_frame_sequence = frame.sequence;

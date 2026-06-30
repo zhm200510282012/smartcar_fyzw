@@ -97,11 +97,14 @@ static int runtime02_arm_to_ground(FILE *out)
 static int runtime03_five_adc_valid(FILE *out)
 {
     emag_sample_t sample;
+    emag_sample_t updated;
     int pass;
 
     bsp_emag_init();
     bsp_emag_host_set_raw(600u, 700u, 900u, 700u, 600u, APP_TRUE);
-    sample = ctrl_line_update(bsp_emag_read());
+    bsp_emag_read(&sample);
+    updated = ctrl_line_update(sample);
+    sample = updated;
     pass = (sample.valid != APP_FALSE &&
             sample.channel_count == EMAG_CHANNEL_COUNT &&
             sample.line_lost == APP_FALSE);

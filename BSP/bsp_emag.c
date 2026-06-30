@@ -251,7 +251,24 @@ app_bool_t bsp_emag_latest_frame(emag_frame_t *frame)
     return APP_TRUE;
 }
 
-emag_sample_t bsp_emag_sample_from_frame(const emag_frame_t *frame)
+static void copy_emag_sample(emag_sample_t *dst, const emag_sample_t *src)
+{
+    u8 i;
+
+    for (i = 0u; i < EMAG_CHANNEL_COUNT; i++) {
+        dst->raw[i] = src->raw[i];
+        dst->filtered[i] = src->filtered[i];
+        dst->norm[i] = src->norm[i];
+    }
+    dst->line_error = src->line_error;
+    dst->line_quality = src->line_quality;
+    dst->signal_quality = src->signal_quality;
+    dst->channel_count = src->channel_count;
+    dst->line_lost = src->line_lost;
+    dst->valid = src->valid;
+}
+
+void bsp_emag_sample_from_frame(const emag_frame_t *frame, emag_sample_t *out)
 {
     emag_sample_t s;
     u8 i;
@@ -260,8 +277,11 @@ emag_sample_t bsp_emag_sample_from_frame(const emag_frame_t *frame)
 
     clear_sample(&s);
     if (frame == 0 || frame->complete == APP_FALSE) {
-        g_last_sample = s;
-        return s;
+        copy_emag_sample(&g_last_sample, &s);
+        if (out != 0) {
+            copy_emag_sample(out, &s);
+        }
+        return;
     }
 
     all_valid = APP_TRUE;
@@ -285,22 +305,23 @@ emag_sample_t bsp_emag_sample_from_frame(const emag_frame_t *frame)
     s.line_quality = s.signal_quality;
     s.line_lost = (all_valid != APP_FALSE) ? APP_FALSE : APP_TRUE;
     s.valid = all_valid;
-    g_last_sample = s;
-    return s;
+    copy_emag_sample(&g_last_sample, &s);
+    if (out != 0) {
+        copy_emag_sample(out, &s);
+    }
 }
 
-emag_sample_t bsp_emag_read(void)
+void bsp_emag_read(emag_sample_t *out)
 {
     emag_frame_t frame;
+    u8 i;
 
 #ifdef HOST_SIL
-    u8 i;
     for (i = 0u; i < EMAG_CHANNEL_COUNT; i++) {
         g_frame_buffers[g_write_index].raw[i] = g_host_raw[i];
     }
     publish_write_frame(0ul);
 #else
-    u8 i;
     for (i = 0u; i < EMAG_CHANNEL_COUNT; i++) {
         g_frame_buffers[g_write_index].raw[i] = read_adc_logical_channel(i);
     }
@@ -309,12 +330,14 @@ emag_sample_t bsp_emag_read(void)
     if (bsp_emag_latest_frame(&frame) == APP_FALSE) {
         clear_frame(&frame);
     }
-    return bsp_emag_sample_from_frame(&frame);
+    bsp_emag_sample_from_frame(&frame, out);
 }
 
-emag_sample_t bsp_emag_last_sample(void)
+void bsp_emag_last_sample(emag_sample_t *out)
 {
-    return g_last_sample;
+    if (out != 0) {
+        copy_emag_sample(out, &g_last_sample);
+    }
 }
 
 #ifdef HOST_SIL

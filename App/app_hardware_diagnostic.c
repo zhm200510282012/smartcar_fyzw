@@ -19,7 +19,7 @@ app_hardware_diagnostic_snapshot_t app_hardware_diagnostic_run_once(void)
 
     snapshot.power = bsp_power_read_sample();
     snapshot.arm_requested = bsp_ui_manual_arm_requested();
-    snapshot.emag = bsp_emag_read();
+    bsp_emag_read(&snapshot.emag);
     snapshot.attitude = bsp_imu_read();
     snapshot.encoder = bsp_encoder_read();
     snapshot.route_progress_status = (u8)track_route_event_progress_status();
