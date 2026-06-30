@@ -56,6 +56,19 @@ track_mode_t track_route_profile_detect_raw(const track_mode_input_t *input)
     if (input->seesaw_confirmed != APP_FALSE) {
         return TRACK_MODE_SEESAW;
     }
+    if (input->special_candidate == TRACK_SPECIAL_ELEMENT_CANDIDATE ||
+        input->element_feature.element_burst_rising_edge != APP_FALSE) {
+        return TRACK_MODE_SPECIAL_ELEMENT;
+    }
+    if (input->special_candidate == TRACK_SPECIAL_RIGHT_ANGLE_CANDIDATE) {
+        return TRACK_MODE_SHARP_CURVE;
+    }
+    if (input->special_candidate == TRACK_SPECIAL_RING_CANDIDATE) {
+        return TRACK_MODE_OMEGA;
+    }
+    if (input->special_candidate == TRACK_SPECIAL_CROSSING_CANDIDATE) {
+        return TRACK_MODE_CROSSING;
+    }
     if (input->hex_confirmed != APP_FALSE) {
         return TRACK_MODE_HEX_LOOP;
     }
@@ -66,9 +79,6 @@ track_mode_t track_route_profile_detect_raw(const track_mode_input_t *input)
     abs_error = abs_s16_local(input->line_error);
     abs_rate = abs_s16_local(input->error_rate);
 
-    if (abs_error >= TRACK_SHARP_CURVE_ERROR_MIN && abs_rate >= TRACK_OMEGA_RATE_MIN) {
-        return TRACK_MODE_OMEGA;
-    }
     if (abs_error >= TRACK_SHARP_CURVE_ERROR_MIN || abs_rate >= TRACK_OMEGA_RATE_MIN) {
         return TRACK_MODE_SHARP_CURVE;
     }
@@ -139,6 +149,7 @@ const char *track_route_profile_mode_name(track_mode_t mode)
     case TRACK_MODE_STRAIGHT: return "STRAIGHT";
     case TRACK_MODE_NORMAL_CURVE: return "NORMAL_CURVE";
     case TRACK_MODE_SHARP_CURVE: return "SHARP_CURVE";
+    case TRACK_MODE_SPECIAL_ELEMENT: return "SPECIAL_ELEMENT";
     case TRACK_MODE_CROSSING: return "CROSSING";
     case TRACK_MODE_OMEGA: return "OMEGA";
     case TRACK_MODE_HEX_LOOP: return "HEX_LOOP";

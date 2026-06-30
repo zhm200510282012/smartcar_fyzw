@@ -6,6 +6,9 @@
 #endif
 
 static emag_sample_t g_last_sample;
+static emag_frame_t g_front_frame;
+static emag_frame_t g_back_frame;
+static u8 g_sensor_channel_index;
 
 #ifdef HOST_SIL
 static u16 g_host_raw[EMAG_CHANNEL_COUNT];
@@ -88,11 +91,43 @@ static void clear_sample(emag_sample_t *sample)
     sample->valid = APP_FALSE;
 }
 
+static void clear_frame(emag_frame_t *frame)
+{
+    u8 i;
+
+    for (i = 0u; i < EMAG_CHANNEL_COUNT; i++) {
+        frame->raw[i] = 0u;
+    }
+    frame->timestamp_ms = 0ul;
+    frame->sequence = 0u;
+    frame->complete = APP_FALSE;
+}
+
+static u16 read_adc_logical_channel(u8 index)
+{
+#ifdef HOST_SIL
+    return g_host_raw[index];
+#else
+    return Get_ADCResult((ADC_CHx)g_adc_channels[index]);
+#endif
+}
+
+static void commit_back_frame(u32 now_ms)
+{
+    g_back_frame.timestamp_ms = now_ms;
+    g_back_frame.sequence = (u16)(g_front_frame.sequence + 1u);
+    g_back_frame.complete = APP_TRUE;
+    g_front_frame = g_back_frame;
+}
+
 void bsp_emag_init(void)
 {
     u8 i;
 
     clear_sample(&g_last_sample);
+    clear_frame(&g_front_frame);
+    clear_frame(&g_back_frame);
+    g_sensor_channel_index = 0u;
 #ifdef HOST_SIL
     for (i = 0u; i < EMAG_CHANNEL_COUNT; i++) {
         g_host_raw[i] = 0u;
@@ -115,7 +150,31 @@ void bsp_emag_init(void)
 #endif
 }
 
-emag_sample_t bsp_emag_read(void)
+void bsp_emag_sensor_tick(u32 now_ms)
+{
+    u16 raw;
+
+    raw = read_adc_logical_channel(g_sensor_channel_index);
+    g_back_frame.raw[g_sensor_channel_index] = raw;
+    g_sensor_channel_index++;
+    if (g_sensor_channel_index >= EMAG_CHANNEL_COUNT) {
+        g_sensor_channel_index = 0u;
+        commit_back_frame(now_ms);
+    }
+}
+
+app_bool_t bsp_emag_latest_frame(emag_frame_t *frame)
+{
+    if (g_front_frame.complete == APP_FALSE) {
+        return APP_FALSE;
+    }
+    if (frame != 0) {
+        *frame = g_front_frame;
+    }
+    return APP_TRUE;
+}
+
+emag_sample_t bsp_emag_sample_from_frame(const emag_frame_t *frame)
 {
     emag_sample_t s;
     u8 i;
@@ -123,17 +182,21 @@ emag_sample_t bsp_emag_read(void)
     u16 raw;
 
     clear_sample(&s);
+    if (frame == 0 || frame->complete == APP_FALSE) {
+        g_last_sample = s;
+        return s;
+    }
+
     all_valid = APP_TRUE;
     for (i = 0u; i < EMAG_CHANNEL_COUNT; i++) {
-#ifdef HOST_SIL
-        raw = g_host_raw[i];
-        if (g_host_adc_valid == APP_FALSE) {
+        raw = frame->raw[i];
+#ifndef HOST_SIL
+        if (raw >= 4096u) {
+            raw = 0u;
             all_valid = APP_FALSE;
         }
 #else
-        raw = Get_ADCResult((ADC_CHx)g_adc_channels[i]);
-        if (raw >= 4096u) {
-            raw = 0u;
+        if (g_host_adc_valid == APP_FALSE) {
             all_valid = APP_FALSE;
         }
 #endif
@@ -147,6 +210,29 @@ emag_sample_t bsp_emag_read(void)
     s.valid = all_valid;
     g_last_sample = s;
     return s;
+}
+
+emag_sample_t bsp_emag_read(void)
+{
+    emag_frame_t frame;
+
+#ifdef HOST_SIL
+    u8 i;
+    for (i = 0u; i < EMAG_CHANNEL_COUNT; i++) {
+        g_back_frame.raw[i] = g_host_raw[i];
+    }
+    commit_back_frame(0ul);
+#else
+    u8 i;
+    for (i = 0u; i < EMAG_CHANNEL_COUNT; i++) {
+        g_back_frame.raw[i] = read_adc_logical_channel(i);
+    }
+    commit_back_frame(0ul);
+#endif
+    if (bsp_emag_latest_frame(&frame) == APP_FALSE) {
+        clear_frame(&frame);
+    }
+    return bsp_emag_sample_from_frame(&frame);
 }
 
 emag_sample_t bsp_emag_last_sample(void)

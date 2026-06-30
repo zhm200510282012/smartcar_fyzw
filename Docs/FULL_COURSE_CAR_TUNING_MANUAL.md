@@ -89,3 +89,10 @@
 - 失败现象：入弯慢、出弯甩、墙面附着风险增加。
 - 只改哪个宏：`GROUND_STRAIGHT_SPEED_MM_S`、`GROUND_CURVE_SPEED_MM_S`、`SHARP_CURVE_SPEED_MM_S`、`TRANSITION_SPEED_MM_S`、`WALL_SPEED_MM_S`。
 - 禁止做什么：禁止同时提高风机、速度和转向增益。
+## 2026-06-30 补充：五路电磁差速车时序和风机台架
+
+1. 五路电磁 ADC 映射只按去年硬件资源顺序对齐：A/L1=`ADC5`，B/L2=`ADC4`，C/M=`ADC3`，D/R1=`ADC0`，E/R2=`ADC1`。这不是实车线序已验证结论，仍需手持扫线确认。
+2. 真实 C251 目标使用两个不同定时器：`Timer1` 只做五路电磁分时采样，`Timer11` 只消费完整传感帧并运行控制 PID/输出仲裁。不要把 PID 放回采样 ISR。
+3. 右直角、环岛、十字共享入口先看 active element count burst。默认 `ELEMENT_SPECIAL_DIRECTION_CONFIGURED=0`，只输出通用特殊元素候选，不猜右直角或环岛方向。
+4. 风机 P2.2/PWM2P_3 正常链路仍为 `track_wall_logic -> ctrl_adhesion -> app_output_arbitrate -> bsp_fan_esc_apply`。默认 `FAN_ESC_PHYSICAL_OUTPUT_ENABLE=0`、`WALL_RUN_ENABLE=0`、`SUCTION_HW_VERIFIED=0`、`FAN_BENCH_TEST_ENABLE=0`，不得上墙。
+5. 独立风机台架只允许临时打开 `FAN_BENCH_TEST_ENABLE`，且必须固定车体、示波确认 P2.2 脉宽、保持 `WALL_RUN_ENABLE=0`。台架通过不等于上墙通过。

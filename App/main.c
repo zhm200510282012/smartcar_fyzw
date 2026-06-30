@@ -1,6 +1,7 @@
 #include "app_types.h"
 #include "app_state_machine.h"
 #include "app_scheduler.h"
+#include "app_control_tick.h"
 #include "../BSP/bsp_init.h"
 #include "../BSP/bsp_timebase.h"
 
@@ -11,6 +12,7 @@ int main(void)
     bsp_init_all_safe();
     app_state_machine_init(&g_app);
     app_scheduler_init();
+    app_control_tick_bind_context(&g_app);
 
     for (;;) {
         app_scheduler_run_due(&g_app, bsp_timebase_now_ms());

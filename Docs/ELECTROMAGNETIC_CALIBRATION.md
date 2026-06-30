@@ -2,6 +2,20 @@
 
 All user-facing line tuning items are in `App/competition_profile.h`.
 
+## Current ADC Resource Order
+
+The current mapping layer follows last year's hardware resource order only:
+
+```text
+A / L1 = ADC5
+B / L2 = ADC4
+C / M  = ADC3
+D / R1 = ADC0
+E / R2 = ADC1
+```
+
+This is not a bench-verified line-order claim. `BOARD_EMAG_LINE_ORDER_VERIFIED` remains `0`, and real-car tuning must still confirm that A/B/C/D/E correspond to left-to-right physical sensors.
+
 ## Current Software Chain
 
 Five normalized electromagnetic channels are converted to a weighted centroid:
@@ -21,4 +35,4 @@ The firmware requires `channel_count == 5` and `sum(norm) >= LINE_VALID_SUM_MIN`
 4. If weak signal is accepted as valid, raise `LINE_VALID_SUM_MIN` or `LINE_LOST_QUALITY_MIN`.
 5. If steering reacts late, lower `LINE_FILTER_ALPHA`; if steering is noisy, raise it.
 
-The real BSP keeps 5LC ADC invalid until the real ADC channel mapping is verified.
+The real BSP keeps the mapping marked unverified until the real ADC channel order is confirmed on the car.

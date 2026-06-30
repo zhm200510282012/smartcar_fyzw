@@ -336,6 +336,11 @@
               <FilePath>..\App\app_scheduler.c</FilePath>
             </File>
             <File>
+              <FileName>app_control_tick.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\App\app_control_tick.c</FilePath>
+            </File>
+            <File>
               <FileName>app_output_arbitration.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\App\app_output_arbitration.c</FilePath>
@@ -381,6 +386,11 @@
               <FilePath>..\App\app_types.h</FilePath>
             </File>
             <File>
+              <FileName>app_control_tick.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\App\app_control_tick.h</FilePath>
+            </File>
+            <File>
               <FileName>app_hardware_diagnostic.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\App\app_hardware_diagnostic.h</FilePath>
@@ -399,6 +409,11 @@
               <FileName>bsp_timebase.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\BSP\bsp_timebase.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_control_timers.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\bsp_control_timers.c</FilePath>
             </File>
             <File>
               <FileName>bsp_drive.c</FileName>
@@ -449,6 +464,11 @@
               <FileName>board_emag_map.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\BSP\board_emag_map.h</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_control_timers.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\BSP\bsp_control_timers.h</FilePath>
             </File>
           </Files>
         </Group>

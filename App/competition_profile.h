@@ -16,6 +16,27 @@
 #define LINE_FILTER_ALPHA 3
 #define LINE_FILTER_DENOM 4
 
+/* 硬件定时任务：传感器帧 1000 Hz，控制 PID 500 Hz。 */
+#define SENSOR_FRAME_HZ 1000u
+#define CONTROL_PID_HZ 500u
+/* 传感器完整帧过期阈值，单位 ms；调大可抗抖，调小更保守。 */
+#define SENSOR_STALE_TIMEOUT_MS 8u
+/* 控制 ISR 超时统计阈值，单位 us；只作诊断，不自动放宽安全门。 */
+#define CONTROL_OVERRUN_LIMIT_US 800u
+
+#define ELEMENT_ACTIVE_ENTER_NORM 180u
+#define ELEMENT_ACTIVE_EXIT_NORM 110u
+#define ELEMENT_BURST_ENABLE 1
+#define ELEMENT_BURST_BASELINE_MAX_ACTIVE 2u
+#define ELEMENT_BURST_MIN_ACTIVE 3u
+#define ELEMENT_BURST_MIN_RISE 2
+#define ELEMENT_BURST_CONFIRM_MS 10u
+#define ELEMENT_BURST_RELEASE_MS 20u
+#define ELEMENT_BURST_COOLDOWN_MS 80u
+#define ELEMENT_BURST_MIN_QUALITY 600u
+#define ELEMENT_RING_HOLD_MS 40u
+#define ELEMENT_SPECIAL_DIRECTION_CONFIGURED 0
+
 /* Historical servo settings are retained for old reference files only. */
 #define STEERING_LEFT_CENTER_US 1510u
 #define STEERING_RIGHT_CENTER_US 1510u
@@ -81,6 +102,9 @@
 #define FAN_RAMP_DOWN_PERIOD_MS 20u
 #define FAN_ESC_PHYSICAL_OUTPUT_ENABLE 0
 #define WALL_RUN_ENABLE 0
+#define FAN_BENCH_TEST_ENABLE 0
+#define FAN_BENCH_PULSE_US FAN_ESC_MIN_US
+#define FAN_BENCH_DURATION_MS 3000u
 
 /* 路线事件来源：0=无自动事件，1=Host-SIL 注入，2=手动注入，3=编码器里程脚本。 */
 #define ROUTE_EVENT_SOURCE_NONE 0u
@@ -151,6 +175,26 @@
 
 #if (ROUTE_PROGRESS_SCRIPT_ENABLE != 0) && (ROUTE_PROGRESS_SCRIPT_ENABLE != 1)
 #error ROUTE_PROGRESS_SCRIPT_ENABLE must be 0 or 1.
+#endif
+
+#if (ELEMENT_BURST_ENABLE != 0) && (ELEMENT_BURST_ENABLE != 1)
+#error ELEMENT_BURST_ENABLE must be 0 or 1.
+#endif
+
+#if ELEMENT_ACTIVE_EXIT_NORM >= ELEMENT_ACTIVE_ENTER_NORM
+#error ELEMENT_ACTIVE_EXIT_NORM must be lower than ELEMENT_ACTIVE_ENTER_NORM.
+#endif
+
+#if (FAN_BENCH_TEST_ENABLE != 0) && (FAN_BENCH_TEST_ENABLE != 1)
+#error FAN_BENCH_TEST_ENABLE must be 0 or 1.
+#endif
+
+#if (FAN_BENCH_TEST_ENABLE != 0) && (FAN_ESC_PHYSICAL_OUTPUT_ENABLE == 0)
+#error FAN_BENCH_TEST_ENABLE requires FAN_ESC_PHYSICAL_OUTPUT_ENABLE=1 for a deliberate bench session.
+#endif
+
+#if (FAN_BENCH_TEST_ENABLE != 0) && (WALL_RUN_ENABLE != 0)
+#error FAN_BENCH_TEST_ENABLE requires WALL_RUN_ENABLE=0.
 #endif
 
 #if (IMU_PITCH_SIGN != 1) && (IMU_PITCH_SIGN != -1)

@@ -362,6 +362,25 @@ u8 bsp_power_is_ok(void)
     return g_input.power_ok;
 }
 
+power_sample_t bsp_power_read_sample(void)
+{
+    power_sample_t sample;
+
+    sample.raw_adc = g_input.power_ok ? 4095u : 0u;
+    sample.filtered_adc = sample.raw_adc;
+    sample.voltage_estimate_mv = g_input.power_ok ? 12000u : 0u;
+    sample.calibration_valid = APP_TRUE;
+    sample.power_good = g_input.power_ok;
+    sample.power_uncalibrated = APP_FALSE;
+    sample.adc_valid = APP_TRUE;
+    return sample;
+}
+
+power_sample_t bsp_power_last_sample(void)
+{
+    return bsp_power_read_sample();
+}
+
 void bsp_ui_init(void)
 {
     g_last_ui_state = APP_STATE_BOOT;

@@ -13,7 +13,7 @@ BUILD_DIR = REPO_ROOT / "build"
 RESULT_DIR = REPO_ROOT / "sim" / "results"
 
 SOURCES = [
-    "sim/host/final_full_course_runner.c",
+    "sim/host/timing_element_fan_runner.c",
     "sim/host/host_bsp.c",
     "App/app_scheduler.c",
     "App/app_control_tick.c",
@@ -27,12 +27,16 @@ SOURCES = [
     "Control/ctrl_adhesion.c",
     "Control/ctrl_attitude.c",
     "Control/ctrl_differential_drive.c",
-    "Control/ctrl_fuzzy_pid.c",
-    "Control/ctrl_fuzzy_turn.c",
     "Control/ctrl_line.c",
     "Control/ctrl_profile.c",
     "Control/ctrl_signal.c",
+    "Control/ctrl_fuzzy_pid.c",
+    "Control/ctrl_fuzzy_turn.c",
+    "Control/ctrl_fuzzy_steering.c",
     "Control/ctrl_speed.c",
+    "Control/ctrl_steering.c",
+    "Control/ctrl_transition.c",
+    "Control/ctrl_vehicle.c",
     "Track/track_features.c",
     "Track/track_full_course_profile.c",
     "Track/track_route_event.c",
@@ -46,13 +50,13 @@ SOURCES = [
 
 def exe_path():
     suffix = ".exe" if os.name == "nt" else ""
-    return REPO_ROOT / "sim" / "host" / f"final_full_course_runner{suffix}"
+    return REPO_ROOT / "sim" / "host" / f"timing_element_fan_runner{suffix}"
 
 
 def build_runner():
     compiler = build_host_sil.find_compiler()
     BUILD_DIR.mkdir(parents=True, exist_ok=True)
-    log_path = BUILD_DIR / "final_full_course_runner_build.log"
+    log_path = BUILD_DIR / "timing_element_fan_runner_build.log"
     if compiler is None:
         log_path.write_text(
             "No host C compiler found. Tried HOST_SIL_CC, cl, gcc, clang, cc, and known existing local compiler paths.\n",
@@ -110,84 +114,68 @@ def build_runner():
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
     )
-    log_path.write_text(
-        "COMMAND:\n"
-        + " ".join(cmd)
-        + "\n\nOUTPUT:\n"
-        + result.stdout
-        + f"\nEXIT_CODE: {result.returncode}\n",
-        encoding="utf-8",
-    )
-    if result.returncode != 0:
-        return None, result.returncode
-    return output, 0
+    log_path.write_text(result.stdout, encoding="utf-8")
+    return output, result.returncode
 
 
-def read_raw_results(path):
-    with path.open(newline="", encoding="utf-8") as handle:
-        return list(csv.DictReader(handle))
-
-
-def write_summary(rows):
-    failed = [row for row in rows if row["pass"].lower() != "true"]
-    scenarios = {}
-    for row in rows:
-        scenarios[row["scenario"]] = {
-            "pass": row["pass"].lower() == "true",
-            "metric_a": int(row["metric_a"]),
-            "metric_b": int(row["metric_b"]),
-            "metric_c": int(row["metric_c"]),
-            "notes": row["notes"],
+def summarize(raw_csv):
+    rows = list(csv.DictReader(raw_csv.read_text(encoding="utf-8").splitlines()))
+    scenarios = {
+        row["scenario"]: {
+            "pass": row["status"] == "PASS",
+            "detail": row["detail"],
+            "values": [row["value1"], row["value2"], row["value3"]],
         }
+        for row in rows
+    }
+    passed = sum(1 for row in rows if row["status"] == "PASS")
     summary = {
         "scenario_count": len(rows),
-        "passed": len(rows) - len(failed),
-        "failed": len(failed),
+        "passed": passed,
+        "failed": len(rows) - passed,
         "scenarios": scenarios,
         "safety": {
             "fan_esc_physical_output_enable": 0,
             "wall_run_enable": 0,
-            "hardware_fan_output_max": scenarios.get("F02", {}).get("metric_b", 0),
-            "real_bench_pass": False,
+            "suction_hw_verified": 0,
+            "fan_bench_test_enable": 0,
             "real_wall_pass": False,
+            "real_bench_pass": False,
         },
     }
-    (RESULT_DIR / "final_full_course_summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
-    with (RESULT_DIR / "final_full_course_summary.csv").open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(
-            handle,
-            fieldnames=["scenario", "pass", "metric_a", "metric_b", "metric_c", "notes"],
-        )
-        writer.writeheader()
-        writer.writerows(rows)
     return summary
 
 
 def main():
-    RESULT_DIR.mkdir(parents=True, exist_ok=True)
-    runner, code = build_runner()
-    if code != 0 or runner is None:
-        print((BUILD_DIR / "final_full_course_runner_build.log").read_text(encoding="utf-8", errors="replace"))
-        return code or 2
+    output, code = build_runner()
+    if code != 0 or output is None:
+        return code
 
-    raw_csv = RESULT_DIR / "final_full_course_raw.csv"
+    RESULT_DIR.mkdir(parents=True, exist_ok=True)
+    raw_csv = RESULT_DIR / "timing_element_fan_raw.csv"
     result = subprocess.run(
-        [str(runner), str(raw_csv)],
+        [str(output), str(raw_csv)],
         cwd=str(REPO_ROOT),
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
     )
-    rows = read_raw_results(raw_csv)
-    summary = write_summary(rows)
-    print(f"Final full-course Host-SIL scenarios: {summary['passed']}/{summary['scenario_count']} passed")
-    if result.returncode != 0 or summary["failed"] != 0:
+    (BUILD_DIR / "timing_element_fan_runner.log").write_text(result.stdout, encoding="utf-8")
+    if result.returncode != 0:
         sys.stdout.write(result.stdout)
-        for scenario, item in summary["scenarios"].items():
-            if not item["pass"]:
-                print(f"{scenario}: {item['notes']}")
-        return 1
-    return 0
+        return result.returncode
+
+    summary = summarize(raw_csv)
+    summary_path = RESULT_DIR / "timing_element_fan_summary.json"
+    csv_path = RESULT_DIR / "timing_element_fan_summary.csv"
+    summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
+    with csv_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["scenario", "pass", "detail"])
+        for name, data in sorted(summary["scenarios"].items()):
+            writer.writerow([name, int(data["pass"]), data["detail"]])
+    print(json.dumps(summary, indent=2, sort_keys=True))
+    return 0 if summary["failed"] == 0 else 1
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@
 
 #include "../App/app_types.h"
 #include "../App/app_config.h"
+#include "track_features.h"
 
 typedef struct {
     u16 start_mm;
@@ -22,6 +23,8 @@ typedef struct {
     u8 cross_confirmed;
     u8 hex_confirmed;
     u8 seesaw_confirmed;
+    track_element_feature_t element_feature;
+    track_special_candidate_t special_candidate;
     u16 dt_ms;
 } track_mode_input_t;
 
