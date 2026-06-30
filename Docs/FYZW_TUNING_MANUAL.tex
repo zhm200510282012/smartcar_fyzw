@@ -19,18 +19,15 @@
 \renewcommand{\arraystretch}{1.15}
 \newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
 
-\title{\bfseries 飞檐走壁组初版调车手册}
-\author{smartcar\_fyzw}
-\date{基线：0c71607，参考：\path{D:/smartcar21/legacy_last_year/9.7}}
+\title{\bfseries 神在原后面的初版调车手册}
 
 \begin{document}
 \maketitle
 
-\section*{一句话结论}
 
-今年代码已经具备初版软件闭环：五路电磁、左右编码器、差速速度 PI、双舵机输出、赛道状态机、上墙逻辑框架、风机 ESC 逻辑和安全仲裁都已接入主调度。
+代码已经具备初版软件闭环：五路电磁、左右编码器、差速速度 PI、双舵机输出、赛道状态机、上墙逻辑框架、风机 ESC 逻辑和安全仲裁都已接入主调度。
 
-但这不是实车通关状态。它只能进入离地和低速地面联调。负压风机物理输出仍锁定，上墙仍锁定；五路电磁线序、舵机方向、编码器比例、IMU 轴向和风机推力都必须实物确认后再扩大测试范围。
+只能进入离地和低速地面联调。负压风机物理输出仍锁定，上墙仍锁定；五路电磁线序、舵机方向、编码器比例、IMU 轴向和风机推力都必须实物确认后再扩大测试范围。
 
 \section*{去年代码给出的基线}
 
@@ -176,7 +173,6 @@ LSM6DSR SCK & P4.3 & SPI 分支，未实车确认 \\
 
 这四项没有确认前，不允许跑车。确认后，日常调车不应再改底层 BSP。
 
-\section*{一次调车顺序}
 
 \begin{enumerate}
   \item 离地，电机小 PWM，确认左右轮、正反方向、编码器是否有变化。
@@ -188,7 +184,6 @@ LSM6DSR SCK & P4.3 & SPI 分支，未实车确认 \\
   \item 再测急弯、元素、过渡段；最后才讨论上墙。
 \end{enumerate}
 
-\section*{故障只改一项}
 
 \begin{longtable}{L{0.32\linewidth}L{0.58\linewidth}}
 \toprule
@@ -206,8 +201,6 @@ LSM6DSR SCK & P4.3 & SPI 分支，未实车确认 \\
 \bottomrule
 \end{longtable}
 
-\section*{安全红线}
-
 \begin{itemize}
   \item \path{FAN_ESC_PHYSICAL_OUTPUT_ENABLE=0}：风机 P2.2 真实输出仍关闭。
   \item \path{WALL_RUN_ENABLE=0}：真实上墙状态仍禁止。
@@ -217,7 +210,6 @@ LSM6DSR SCK & P4.3 & SPI 分支，未实车确认 \\
   \item Keil 生成 HEX 不等于可以上墙。
 \end{itemize}
 
-\section*{最小验收标准}
 
 初版代码只按以下标准验收：
 
