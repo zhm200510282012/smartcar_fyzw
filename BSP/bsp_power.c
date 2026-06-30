@@ -1,11 +1,12 @@
 #include "bsp_power.h"
 #include "../App/app_config.h"
+#include "../App/app_memory.h"
 
 #ifndef HOST_SIL
 #include "AI8051U_ADC.h"
 #endif
 
-static power_sample_t g_power_sample;
+static power_sample_t APP_XDATA g_power_sample;
 static app_bool_t g_filter_ready;
 
 #ifdef HOST_SIL

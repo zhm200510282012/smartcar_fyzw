@@ -1,5 +1,6 @@
 #include "lsm6dsr_driver.h"
 #include "../../App/app_config.h"
+#include "../../App/app_memory.h"
 #include "../../BSP/bsp_timebase.h"
 
 #ifndef HOST_SIL
@@ -15,7 +16,7 @@
 #define LSM6DSR_REG_OUTX_L_G 0x22u
 #define LSM6DSR_READ_MASK 0x80u
 
-static lsm6dsr_sample_t g_last_sample;
+static lsm6dsr_sample_t APP_XDATA g_last_sample;
 
 #ifdef HOST_SIL
 static lsm6dsr_sample_t g_host_sample;

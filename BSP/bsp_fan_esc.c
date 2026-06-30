@@ -9,9 +9,10 @@
 #endif
 #include "bsp_fan_esc.h"
 #include "../App/app_config.h"
+#include "../App/app_memory.h"
 #include "board_map.h"
 
-static fan_esc_command_t g_last_command;
+static fan_esc_command_t APP_XDATA g_last_command;
 static u16 g_last_output_us;
 static u16 g_last_applied_us;
 

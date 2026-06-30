@@ -1,11 +1,12 @@
 #include "app_types.h"
+#include "app_memory.h"
 #include "app_state_machine.h"
 #include "app_scheduler.h"
 #include "app_control_tick.h"
 #include "../BSP/bsp_init.h"
 #include "../BSP/bsp_timebase.h"
 
-static app_context_t g_app;
+static app_context_t APP_XDATA g_app;
 
 int main(void)
 {

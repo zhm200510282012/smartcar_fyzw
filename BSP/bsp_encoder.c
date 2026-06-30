@@ -4,11 +4,12 @@
 #endif
 #include "bsp_encoder.h"
 #include "../App/app_config.h"
+#include "../App/app_memory.h"
 #include "board_map.h"
 
 static s32 g_left_total;
 static s32 g_right_total;
-static encoder_sample_t g_last_sample;
+static encoder_sample_t APP_XDATA g_last_sample;
 
 #ifdef HOST_SIL
 static s16 g_host_left_delta;

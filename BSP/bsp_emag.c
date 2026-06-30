@@ -1,13 +1,14 @@
 #include "bsp_emag.h"
 #include "board_emag_map.h"
+#include "../App/app_memory.h"
 
 #ifndef HOST_SIL
 #include "AI8051U_ADC.h"
 #include "AI8051U_NVIC.h"
 #endif
 
-static emag_sample_t g_last_sample;
-static emag_frame_t g_frame_buffers[EMAG_FRAME_BUFFER_COUNT];
+static emag_sample_t APP_XDATA g_last_sample;
+static emag_frame_t APP_XDATA g_frame_buffers[EMAG_FRAME_BUFFER_COUNT];
 static volatile u8 g_front_index;
 static volatile u8 g_write_index;
 static volatile u8 g_reader_index;

@@ -376,6 +376,11 @@
               <FilePath>..\App\app_config.h</FilePath>
             </File>
             <File>
+              <FileName>app_memory.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\App\app_memory.h</FilePath>
+            </File>
+            <File>
               <FileName>competition_profile.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\App\competition_profile.h</FilePath>

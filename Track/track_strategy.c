@@ -1,6 +1,7 @@
 #include "track_strategy.h"
+#include "../App/app_memory.h"
 
-static const track_mode_params_t g_mode_params[] = {
+static const track_mode_params_t APP_XDATA g_mode_params[] = {
     {TRACK_MODE_STRAIGHT,
      FUZZY_STRAIGHT_BASE_KP, FUZZY_STRAIGHT_BASE_KI, FUZZY_STRAIGHT_BASE_KD,
      FUZZY_STRAIGHT_KP_LIMIT, FUZZY_STRAIGHT_KI_LIMIT, FUZZY_STRAIGHT_KD_LIMIT,

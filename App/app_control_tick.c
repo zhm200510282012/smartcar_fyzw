@@ -7,6 +7,7 @@
 #include "app_control_tick.h"
 #include "app_build_profile.h"
 #include "app_config.h"
+#include "app_memory.h"
 #include "app_output_arbitration.h"
 #include "app_state_machine.h"
 #include "app_safety.h"
@@ -36,16 +37,16 @@
 #include "../sim/host/host_bsp.h"
 #endif
 
-static track_mode_state_t g_track_mode_state;
-static ctrl_fuzzy_turn_state_t g_fuzzy_turn_state;
-static line_filter_state_t g_line_filter_state;
-static speed_pi_state_t g_left_speed_pi;
-static speed_pi_state_t g_right_speed_pi;
-static track_wall_logic_t g_wall_logic;
-static track_full_course_profile_t g_full_course_profile;
-static ctrl_adhesion_state_t g_adhesion_state;
+static track_mode_state_t APP_XDATA g_track_mode_state;
+static ctrl_fuzzy_turn_state_t APP_XDATA g_fuzzy_turn_state;
+static line_filter_state_t APP_XDATA g_line_filter_state;
+static speed_pi_state_t APP_XDATA g_left_speed_pi;
+static speed_pi_state_t APP_XDATA g_right_speed_pi;
+static track_wall_logic_t APP_XDATA g_wall_logic;
+static track_full_course_profile_t APP_XDATA g_full_course_profile;
+static ctrl_adhesion_state_t APP_XDATA g_adhesion_state;
 static u16 g_line_lost_elapsed_ms;
-static app_control_tick_stats_t g_stats;
+static app_control_tick_stats_t APP_XDATA g_stats;
 static app_context_t *g_bound_context;
 static u16 g_last_consumed_frame_sequence;
 
