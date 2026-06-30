@@ -1,14 +1,15 @@
 #include "track_features.h"
+#include "../App/app_memory.h"
 
-static u8 g_active_mask;
-static u8 g_baseline_count;
-static u16 g_confirm_ms;
-static u16 g_release_ms;
-static u16 g_cooldown_ms;
-static u16 g_burst_hold_ms;
-static app_bool_t g_burst_active;
-static app_bool_t g_armed;
-static track_special_candidate_t g_candidate;
+static u8 APP_XDATA g_active_mask;
+static u8 APP_XDATA g_baseline_count;
+static u16 APP_XDATA g_confirm_ms;
+static u16 APP_XDATA g_release_ms;
+static u16 APP_XDATA g_cooldown_ms;
+static u16 APP_XDATA g_burst_hold_ms;
+static app_bool_t APP_XDATA g_burst_active;
+static app_bool_t APP_XDATA g_armed;
+static track_special_candidate_t APP_XDATA g_candidate;
 
 static u8 popcount5(u8 value)
 {

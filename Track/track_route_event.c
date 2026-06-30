@@ -1,7 +1,8 @@
 #include "track_route_event.h"
+#include "../App/app_memory.h"
 
-static track_route_event_t g_manual_event;
-static route_progress_status_t g_progress_status = ROUTE_PROGRESS_DISABLED;
+static track_route_event_t APP_XDATA g_manual_event;
+static route_progress_status_t APP_XDATA g_progress_status = ROUTE_PROGRESS_DISABLED;
 
 track_route_event_t track_route_event_none(void)
 {

@@ -3,13 +3,14 @@
 #include "bsp_timing_scope.h"
 #include "../App/app_config.h"
 #include "../App/app_control_tick.h"
+#include "../App/app_memory.h"
 
 #ifndef HOST_SIL
 #include "AI8051U_NVIC.h"
 #include "AI8051U_Timer.h"
 #endif
 
-static bsp_control_timer_config_t g_timer_config;
+static bsp_control_timer_config_t APP_XDATA g_timer_config;
 
 #ifndef HOST_SIL
 static u16 timer_reload_for_hz(u16 hz)

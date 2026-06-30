@@ -5,11 +5,12 @@
 #endif
 #include "bsp_steering.h"
 #include "../App/app_config.h"
+#include "../App/app_memory.h"
 #include "board_map.h"
 
-static u16 g_steering_pulse_us;
-static u16 g_steering_left_pulse_us;
-static u16 g_steering_right_pulse_us;
+static u16 APP_XDATA g_steering_pulse_us;
+static u16 APP_XDATA g_steering_left_pulse_us;
+static u16 APP_XDATA g_steering_right_pulse_us;
 
 static u16 clamp_left_pulse(u16 pulse_us)
 {

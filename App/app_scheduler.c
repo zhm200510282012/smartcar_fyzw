@@ -1,14 +1,15 @@
 #include "app_scheduler.h"
 #include "app_control_tick.h"
 #include "app_config.h"
+#include "app_memory.h"
 #include "../BSP/bsp_power.h"
 #include "../BSP/bsp_ui.h"
 
-static u32 g_last_sensor;
-static u32 g_last_control;
-static u32 g_last_track;
-static u32 g_last_health;
-static u32 g_last_ui;
+static u32 APP_XDATA g_last_sensor;
+static u32 APP_XDATA g_last_control;
+static u32 APP_XDATA g_last_track;
+static u32 APP_XDATA g_last_health;
+static u32 APP_XDATA g_last_ui;
 
 static u8 control_or_wall_active(app_state_t state)
 {

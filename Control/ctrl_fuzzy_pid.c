@@ -1,12 +1,11 @@
 #include "ctrl_fuzzy_pid.h"
 #include "ctrl_signal.h"
-#include "../App/app_memory.h"
 
-static const s16 APP_XDATA g_centers[FUZZY_TERM_COUNT] = {
+static const s16 g_centers[FUZZY_TERM_COUNT] = {
     -1000, -500, 0, 500, 1000
 };
 
-static const s16 APP_XDATA g_rule_kp_permille[FUZZY_TERM_COUNT][FUZZY_TERM_COUNT] = {
+static const s16 g_rule_kp_permille[FUZZY_TERM_COUNT][FUZZY_TERM_COUNT] = {
     {900, 780, 640, 780, 900},
     {680, 520, 340, 520, 680},
     {280, 120,   0, 120, 280},
@@ -14,7 +13,7 @@ static const s16 APP_XDATA g_rule_kp_permille[FUZZY_TERM_COUNT][FUZZY_TERM_COUNT
     {900, 780, 640, 780, 900}
 };
 
-static const s16 APP_XDATA g_rule_ki_permille[FUZZY_TERM_COUNT][FUZZY_TERM_COUNT] = {
+static const s16 g_rule_ki_permille[FUZZY_TERM_COUNT][FUZZY_TERM_COUNT] = {
     {-1000, -900, -700, -900, -1000},
     { -800, -550, -250, -550,  -800},
     { -500, -180,  200, -180,  -500},
@@ -22,7 +21,7 @@ static const s16 APP_XDATA g_rule_ki_permille[FUZZY_TERM_COUNT][FUZZY_TERM_COUNT
     {-1000, -900, -700, -900, -1000}
 };
 
-static const s16 APP_XDATA g_rule_kd_permille[FUZZY_TERM_COUNT][FUZZY_TERM_COUNT] = {
+static const s16 g_rule_kd_permille[FUZZY_TERM_COUNT][FUZZY_TERM_COUNT] = {
     {950, 760, 520, 760, 950},
     {850, 620, 360, 620, 850},
     {720, 450, 160, 450, 720},

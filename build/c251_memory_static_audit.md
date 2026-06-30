@@ -13,6 +13,8 @@ Checks:
 | Keil `MemoryModel` remains `3` | PASS |
 | XRAM range remains `0x10000` size `0x8000` | PASS |
 | `huge` pointer keyword is not used in project sources | PASS |
+| No `const APP_XDATA` objects remain in project sources | PASS |
+| Additional non-const persistent state was migrated after Keil reported `edata+hdata=1627` | PASS |
 | `BSP/bsp_imu.c` diff hash stayed unchanged from turn start | PASS |
 | No `git add .` or `git add -A` was used | PASS |
 

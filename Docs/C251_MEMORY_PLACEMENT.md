@@ -16,6 +16,16 @@ xdata=0
 
 本轮不缩小 `?STACK`，不更改 Keil Memory Model，不改 IRAM/XRAM 地址范围。处理方式是把必要的文件级 static/global 持久对象迁移到 AI8051U XDATA。
 
+用户随后真实 Keil Rebuild 已确认链接成功并生成 HEX，但出现：
+
+```text
+*** WARNING L56: CONSTANT SEGMENTS IN XDATA AREA
+Program Size: data=8.3 edata+hdata=1627 xdata=853 const=8044 code=21564
+0 Error(s), 1 Warning(s)
+```
+
+该 warning 来自把 `const` 查表数组放入 XDATA。本轮后续修正为：`const` 查表回到默认常量区，继续只迁移非 const 持久状态。
+
 | 对象 | 原文件 | 迁移前存储区 | 迁移后存储区 | 原因 | 是否 ISR 访问 |
 | -- | --- | ------ | ------ | -- | --------- |
 | `g_app` | `App/main.c` | EDATA/HADATA | XDATA | 主应用上下文包含电磁、IMU、编码器、输出和状态机字段，是最大常驻对象之一 | 是，Timer0 control tick 经绑定指针访问 |
@@ -33,8 +43,13 @@ xdata=0
 | `g_power_sample` | `BSP/bsp_power.c` | EDATA/HADATA | XDATA | 电源完整样本缓存 | 是，控制 tick 健康检查 |
 | `g_last_command` | `BSP/bsp_fan_esc.c` | EDATA/HADATA | XDATA | 风机 ESC 最近命令缓存；物理输出默认仍为 0 | 是，控制 tick 输出仲裁后写入 |
 | `g_last_sample` | `Drivers/Board/lsm6dsr_driver.c` | EDATA/HADATA | XDATA | LSM6DSR 原始样本缓存 | 是，IMU BSP 读取路径访问 |
-| `g_centers` / `g_rule_*_permille` | `Control/ctrl_fuzzy_pid.c` | EDATA/HADATA | XDATA | 模糊 PID 查表数组体积较大，迁移以增加 EDATA 余量 | 是，控制 tick 的模糊转向路径 |
-| `g_mode_params[]` | `Track/track_strategy.c` | EDATA/HADATA | XDATA | 赛道模式参数表为常驻数组，迁移以增加 EDATA 余量 | 是，控制 tick 查询目标速度 |
+| `g_last_sensor` / `g_last_control` / `g_last_track` / `g_last_health` / `g_last_ui` | `App/app_scheduler.c` | EDATA/HADATA | XDATA | scheduler 持久时间戳合计 20 B，迁移以继续压低 EDATA | 否，主循环访问 |
+| `g_drive_*_native` | `BSP/bsp_drive.c` | EDATA/HADATA | XDATA | 最近电机输出缓存 | 是，输出路径访问 |
+| `g_steering_*_pulse_us` | `BSP/bsp_steering.c` | EDATA/HADATA | XDATA | 最近舵机脉宽缓存 | 是，输出路径访问 |
+| `g_last_command` / `g_last_native_output` | `BSP/bsp_suction.c` | EDATA/HADATA | XDATA | 负压 legacy 输出缓存；安全锁定不变 | 是，安全/输出路径访问 |
+| `g_timer_config` | `BSP/bsp_control_timers.c` | EDATA/HADATA | XDATA | Timer 配置遥测结构体，非 ISR 临时变量 | 否，初始化/查询访问 |
+| `g_manual_event` / `g_progress_status` | `Track/track_route_event.c` | EDATA/HADATA | XDATA | 路线事件持久状态 | 是，控制 tick 查询 |
+| `g_active_mask` 等元素激增持久状态 | `Track/track_features.c` | EDATA/HADATA | XDATA | 元素检测状态机持久状态，迁移不改变阈值/语义 | 是，控制 tick 更新 |
 
 ## 保留在 EDATA/HADATA 的对象
 
@@ -44,6 +59,8 @@ xdata=0
 | 单个计数器、标志位、时间戳 | `App/app_control_tick.c`、`BSP/*.c`、`Track/*.c` | 体积小，迁移收益低；保留可减少 XDATA 访问开销 |
 | `g_bound_context` 指针 | `App/app_control_tick.c` | 控制 ISR 高频读取的绑定指针，体积小 |
 | `BSP/bsp_imu.c` 内 `g_last_attitude` | `BSP/bsp_imu.c` | 该文件存在用户未提交 diff，本轮严格禁止修改 |
+| `Control/ctrl_fuzzy_pid.c` 的 `const` 查表 | `Control/ctrl_fuzzy_pid.c` | 保留默认常量区，避免 `WARNING L56: CONSTANT SEGMENTS IN XDATA AREA` |
+| `Track/track_strategy.c` 的 `const g_mode_params[]` | `Track/track_strategy.c` | 保留默认常量区，避免 `WARNING L56` |
 
 ## 栈与 ISR 审计
 

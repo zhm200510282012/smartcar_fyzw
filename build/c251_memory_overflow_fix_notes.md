@@ -35,7 +35,19 @@ Important retained safety state:
 Keil status:
 
 ```text
-Keil C251 final link result is not available in Codex.
-User must run Clean + Rebuild for target AI8051U_FYZW_SAFE.
-The target objective is edata+hdata <= 1536 B while keeping ?STACK at 0x100.
+User Keil C251 rebuild after commit 2f38fdf:
+linking...
+*** WARNING L56: CONSTANT SEGMENTS IN XDATA AREA
+Program Size: data=8.3 edata+hdata=1627 xdata=853 const=8044 code=21564
+creating hex file from ".\OBJ_Out\smartcar_fyzw"...
+".\OBJ_Out\smartcar_fyzw" - 0 Error(s), 1 Warning(s).
+```
+
+Follow-up fix:
+
+```text
+Removed APP_XDATA from const lookup tables to address L56.
+Moved additional non-const persistent state to XDATA to reduce edata+hdata further.
+The target objective remains edata+hdata <= 1536 B while keeping ?STACK at 0x100.
+Final Program Size must be confirmed by the next user Keil Clean + Rebuild.
 ```

@@ -4,11 +4,12 @@
 #endif
 #include "bsp_drive.h"
 #include "../App/app_config.h"
+#include "../App/app_memory.h"
 #include "board_map.h"
 
-static s16 g_drive_command_native;
-static s16 g_drive_left_native;
-static s16 g_drive_right_native;
+static s16 APP_XDATA g_drive_command_native;
+static s16 APP_XDATA g_drive_left_native;
+static s16 APP_XDATA g_drive_right_native;
 
 static s16 clamp_drive(s16 value)
 {

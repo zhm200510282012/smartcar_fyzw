@@ -4,10 +4,11 @@
 #endif
 #include "bsp_suction.h"
 #include "../App/app_config.h"
+#include "../App/app_memory.h"
 #include "board_map.h"
 
-static suction_command_t g_last_command;
-static u16 g_last_native_output;
+static suction_command_t APP_XDATA g_last_command;
+static u16 APP_XDATA g_last_native_output;
 
 #if SUCTION_HW_VERIFIED != 0
 static u16 clamp_native(u16 value)
