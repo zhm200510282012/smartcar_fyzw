@@ -1,0 +1,233 @@
+\documentclass[UTF8,zihao=-4]{ctexart}
+
+\usepackage[a4paper,margin=20mm]{geometry}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=blue
+}
+
+\setlist[itemize]{leftmargin=1.6em,itemsep=2pt,topsep=2pt}
+\setlist[enumerate]{leftmargin=1.8em,itemsep=2pt,topsep=2pt}
+\renewcommand{\arraystretch}{1.15}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\title{\bfseries 飞檐走壁组初版调车手册}
+\author{smartcar\_fyzw}
+\date{基线：0c71607，参考：\path{D:/smartcar21/legacy_last_year/9.7}}
+
+\begin{document}
+\maketitle
+
+\section*{一句话结论}
+
+今年代码已经具备初版软件闭环：五路电磁、左右编码器、差速速度 PI、双舵机输出、赛道状态机、上墙逻辑框架、风机 ESC 逻辑和安全仲裁都已接入主调度。
+
+但这不是实车通关状态。它只能进入离地和低速地面联调。负压风机物理输出仍锁定，上墙仍锁定；五路电磁线序、舵机方向、编码器比例、IMU 轴向和风机推力都必须实物确认后再扩大测试范围。
+
+\section*{去年代码给出的基线}
+
+\begin{longtable}{L{0.25\linewidth}L{0.34\linewidth}L{0.31\linewidth}}
+\toprule
+项目 & 去年 9.7 证据 & 今年对应实现 \\
+\midrule
+电机 & \path{LQ_MotorServo.c} 使用 PWM5/P50、PWM7/P52，P51/P53 作方向 & \path{BSP/bsp_drive.c} 保留同一资源，输出左右独立 PWM/方向 \\
+编码器 & \path{LQ_Encoder.c} 使用 T3/P04+P05、T4/P06+P07 & \path{BSP/bsp_encoder.c} 保留同一计数和方向资源 \\
+五路电磁 & \path{Inductor.c} 读取 ADC5/4/3/0/1 & \path{BSP/board_emag_map.h} 固定 A-E 为 ADC5/4/3/0/1 \\
+舵机 & \path{LQ_MotorServo.c} 使用 PWM1/P10、PWM2/P12 & 今年保留双舵机配置，但在 \path{board_map.h} 标为未实车确认 \\
+IMU & 去年 LSM6DSR 有 SPI/IIC 测试路径 & 今年走 SPI P4.0--P4.3，轴向仍需实物确认 \\
+风机 & 去年无刷接口可用 50 Hz、1--2 ms 脉宽 & 今年映射到 P2.2/PWM2P\_3，但物理输出默认关闭 \\
+\bottomrule
+\end{longtable}
+
+\section*{当前完成度}
+
+\begin{longtable}{L{0.30\linewidth}L{0.18\linewidth}L{0.42\linewidth}}
+\toprule
+模块 & 初版状态 & 说明 \\
+\midrule
+主循环和定时调度 & 已接通 & \path{App/main.c} 初始化 BSP、状态机、调度器并绑定全局上下文。 \\
+五路电磁循迹 & 已接通 & \path{Control/ctrl_line.c} 使用五路加权重心，低能量判丢线。 \\
+差速车速度闭环 & 已接通 & \path{Control/ctrl_speed.c} 左右轮独立 PI，带积分、输出和加速度限制。 \\
+双舵机输出 & 已接通 & \path{App/app_output_arbitration.c} 保留左右舵机各自中心和方向。 \\
+赛道状态机 & 已接通 & \path{Track/} 中保留普通弯、急弯、元素、过渡、墙面等模式。 \\
+上墙逻辑 & 软件框架已接通 & \path{WALL_RUN_ENABLE=0}，未允许真实上墙。 \\
+风机 ESC & 逻辑已接通 & P2.2 输出层存在，但 \path{FAN_ESC_PHYSICAL_OUTPUT_ENABLE=0}。 \\
+实车标定 & 未完成 & 需要按本文四项物理事实逐项确认。 \\
+\bottomrule
+\end{longtable}
+
+\section*{主控制链}
+
+\begin{verbatim}
+Timer1 sensor tick
+  -> bsp_emag_sensor_tick()
+  -> 五路 ADC 组帧
+
+Timer0 control tick
+  -> app_control_tick_control_isr()
+  -> ctrl_line_update()
+  -> ctrl_line_filter_update()
+  -> track_features_update_elements()
+  -> track_route_event_select()
+  -> track_route_profile_select()
+  -> track_wall_logic_update()
+  -> ctrl_fuzzy_turn_update()
+  -> ctrl_differential_drive_mix()
+  -> ctrl_speed_update_pair()
+  -> ctrl_adhesion_update()
+  -> app_safety_apply_profile()
+  -> app_output_arbitrate()
+  -> bsp_drive_apply_lr()
+  -> bsp_fan_esc_apply()
+\end{verbatim}
+
+\section*{重要函数位置}
+
+\begin{longtable}{L{0.31\linewidth}L{0.39\linewidth}L{0.20\linewidth}}
+\toprule
+用途 & 函数 & 文件 \\
+\midrule
+程序入口 & \path{main()} & \path{App/main.c} \\
+软件调度 & \path{app_scheduler_run_due()} & \path{App/app_scheduler.c} \\
+传感器 ISR 路径 & \path{app_control_tick_sensor_isr()} & \path{App/app_control_tick.c} \\
+控制 ISR 路径 & \path{app_control_tick_control_isr()} & \path{App/app_control_tick.c} \\
+五路电磁组帧 & \path{bsp_emag_sensor_tick()} & \path{BSP/bsp_emag.c} \\
+五路误差计算 & \path{ctrl_line_update()} & \path{Control/ctrl_line.c} \\
+误差滤波/变化率 & \path{ctrl_line_filter_update()} & \path{Control/ctrl_line.c} \\
+赛道模式选择 & \path{track_route_profile_select()} & \path{Track/track_route_profile.c} \\
+墙面状态逻辑 & \path{track_wall_logic_update()} & \path{Track/track_wall_logic.c} \\
+模糊转向输出 & \path{ctrl_fuzzy_turn_update()} & \path{Control/ctrl_fuzzy_turn.c} \\
+差速目标分配 & \path{ctrl_differential_drive_mix()} & \path{Control/ctrl_differential_drive.c} \\
+左右轮速度 PI & \path{ctrl_speed_update_pair()} & \path{Control/ctrl_speed.c} \\
+风机命令状态机 & \path{ctrl_adhesion_update()} & \path{Control/ctrl_adhesion.c} \\
+输出安全仲裁 & \path{app_output_arbitrate()} & \path{App/app_output_arbitration.c} \\
+左右电机落地 & \path{bsp_drive_apply_lr()} & \path{BSP/bsp_drive.c} \\
+双舵机落地 & \path{bsp_steering_apply_pair()} & \path{BSP/bsp_steering.c} \\
+风机 PWM 落地 & \path{bsp_fan_esc_apply()} & \path{BSP/bsp_fan_esc.c} \\
+\bottomrule
+\end{longtable}
+
+\section*{参数只从这里改}
+
+\begin{longtable}{L{0.30\linewidth}L{0.30\linewidth}L{0.30\linewidth}}
+\toprule
+调车目标 & 参数 & 文件 \\
+\midrule
+电磁左右极性 & \path{LINE_DIRECTION_SIGN} & \path{App/competition_profile.h} \\
+丢线阈值 & \path{LINE_VALID_SUM_MIN}，\path{LINE_LOST_QUALITY_MIN} & \path{App/competition_profile.h} \\
+滤波强度 & \path{LINE_FILTER_ALPHA}，\path{LINE_FILTER_DENOM} & \path{App/competition_profile.h} \\
+舵机中心 & \path{STEERING_LEFT_CENTER_US}，\path{STEERING_RIGHT_CENTER_US} & \path{App/competition_profile.h} \\
+舵机方向 & \path{STEERING_LEFT_SIGN}，\path{STEERING_RIGHT_SIGN} & \path{App/competition_profile.h} \\
+基础转向 & \path{GROUND_STEERING_KP}，\path{GROUND_STEERING_KD} & \path{App/competition_profile.h} \\
+模糊 PID 开关 & \path{FUZZY_ENABLE} & \path{App/competition_profile.h} \\
+左右速度 PI & \path{SPEED_KP}，\path{SPEED_KI}，\path{SPEED_INTEGRAL_LIMIT} & \path{App/competition_profile.h} \\
+电机输出限制 & \path{SPEED_OUTPUT_LIMIT}，\path{SPEED_ACCEL_LIMIT} & \path{App/competition_profile.h} \\
+速度档位 & \path{GROUND_*_SPEED_MM_S}，\path{TRANSITION_SPEED_MM_S}，\path{WALL_SPEED_MM_S} & \path{App/competition_profile.h} \\
+编码器比例 & \path{ENCODER_COUNTS_PER_WHEEL_REV}，\path{WHEEL_CIRCUMFERENCE_MM} & \path{App/competition_profile.h} \\
+IMU 轴向 & \path{IMU_PITCH_AXIS}，\path{IMU_PITCH_SIGN}，\path{IMU_PITCH_OFFSET_CDEG} & \path{App/competition_profile.h} \\
+五路 ADC 校准 & \path{BOARD_EMAG_*_OFFSET/GAIN/INVERT} & \path{BSP/board_emag_map.h} \\
+\bottomrule
+\end{longtable}
+
+\section*{当前硬件映射}
+
+\begin{longtable}{L{0.24\linewidth}L{0.34\linewidth}L{0.32\linewidth}}
+\toprule
+对象 & 当前映射 & 状态 \\
+\midrule
+左电机 PWM & PWM5 / P5.0 & 与去年资源一致，已接 BSP \\
+左电机方向 & P5.1 & 与去年资源一致，需确认正方向 \\
+右电机 PWM & PWM7 / P5.2 & 与去年资源一致，已接 BSP \\
+右电机方向 & P5.3 & 与去年资源一致，需确认正方向 \\
+编码器 1 & T3/P0.4，DIR/P0.5 & 与去年资源一致，需确认对应左右轮和正方向 \\
+编码器 2 & T4/P0.6，DIR/P0.7 & 与去年资源一致，需确认对应左右轮和正方向 \\
+电磁 A/L1 & ADC5 & 资源来自去年，线序未实车确认 \\
+电磁 B/L2 & ADC4 & 资源来自去年，线序未实车确认 \\
+电磁 C/M & ADC3 & 资源来自去年，线序未实车确认 \\
+电磁 D/R1 & ADC0 & 资源来自去年，线序未实车确认 \\
+电磁 E/R2 & ADC1 & 资源来自去年，线序未实车确认 \\
+左舵机 & PWM1 / P1.0 & 资源保留，中心和方向未实车确认 \\
+右舵机 & PWM2 / P1.2 & 资源保留，中心和方向未实车确认 \\
+LSM6DSR CS & P4.0 & SPI 分支，未实车确认 \\
+LSM6DSR MOSI & P4.1 & SPI 分支，未实车确认 \\
+LSM6DSR MISO & P4.2 & SPI 分支，未实车确认 \\
+LSM6DSR SCK & P4.3 & SPI 分支，未实车确认 \\
+风机 ESC & P2.2 / PWM2P\_3 & 软件映射存在，物理输出默认关闭 \\
+历史负压候选 & P2.3 / PWM2N & 仅保留为历史候选，不启用 \\
+\bottomrule
+\end{longtable}
+
+\section*{必须先确认的四件事}
+
+\begin{enumerate}
+  \item 左右电机正方向：小 PWM 离地测试，只确认前进方向和左右轮对应关系。
+  \item 左右舵机中心与方向：先调中心，再调 \path{STEERING_*_SIGN}。
+  \item 电磁左右符号：手持车体扫过线，只改 \path{LINE_DIRECTION_SIGN} 或舵机 sign。
+  \item 编码器正方向与每圈计数：推车低速看左右速度，只改比例和方向相关配置。
+\end{enumerate}
+
+这四项没有确认前，不允许跑车。确认后，日常调车不应再改底层 BSP。
+
+\section*{一次调车顺序}
+
+\begin{enumerate}
+  \item 离地，电机小 PWM，确认左右轮、正反方向、编码器是否有变化。
+  \item 离地，舵机回中，确认左右中心、左右极限和同向/反向关系。
+  \item 低速推车，确认编码器符号和速度比例。
+  \item 手持车体扫过电磁线，看五路原始值、归一化值、\path{line_error} 符号。
+  \item 地面低速直线，保持 \path{FUZZY_ENABLE=0}，只看不摆振、不冲线。
+  \item 普通弯低速，通过后再考虑 \path{FUZZY_ENABLE=1}。
+  \item 再测急弯、元素、过渡段；最后才讨论上墙。
+\end{enumerate}
+
+\section*{故障只改一项}
+
+\begin{longtable}{L{0.32\linewidth}L{0.58\linewidth}}
+\toprule
+现象 & 优先只改 \\
+\midrule
+车左偏却继续向左打 & \path{LINE_DIRECTION_SIGN} 或对应 \path{STEERING_*_SIGN} \\
+两舵机互相打架 & 单独改 \path{STEERING_LEFT_SIGN} 或 \path{STEERING_RIGHT_SIGN} \\
+直线蛇形 & 降低 \path{GROUND_STEERING_KP} 或提高 \path{GROUND_STEERING_KD} \\
+入弯慢 & 小幅提高 \path{GROUND_STEERING_KP} \\
+出弯甩尾 & 提高 \path{GROUND_STEERING_KD} 或降低弯道速度 \\
+两轮速度不同 & 先确认电机方向和编码器方向，再调速度 PI \\
+丢线还冲 & 提高丢线阈值或降低速度 \\
+墙面误判 & 只确认 IMU 轴向、符号、偏置，不改状态机策略 \\
+风机无输出 & 这是当前默认安全状态，不是调车故障 \\
+\bottomrule
+\end{longtable}
+
+\section*{安全红线}
+
+\begin{itemize}
+  \item \path{FAN_ESC_PHYSICAL_OUTPUT_ENABLE=0}：风机 P2.2 真实输出仍关闭。
+  \item \path{WALL_RUN_ENABLE=0}：真实上墙状态仍禁止。
+  \item \path{SUCTION_HW_VERIFIED=0}：负压硬件仍未认证。
+  \item \path{FAN_BENCH_TEST_ENABLE=0}：风机台架测试入口仍关闭。
+  \item Host-SIL 通过不等于实车通过。
+  \item Keil 生成 HEX 不等于可以上墙。
+\end{itemize}
+
+\section*{最小验收标准}
+
+初版代码只按以下标准验收：
+
+\begin{enumerate}
+  \item 离地电机和舵机方向可控。
+  \item 五路电磁扫线时 \path{line_error} 左右符号正确。
+  \item 编码器速度正方向和比例可信。
+  \item \path{FUZZY_ENABLE=0} 时低速直线不明显摆振。
+  \item 普通弯能低速通过后，再打开模糊转向。
+  \item 负压和上墙保持锁定，直到硬件台架证据齐全。
+\end{enumerate}
+
+\end{document}
